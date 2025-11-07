@@ -1,6 +1,8 @@
-public interface IInteractable  //Interface Interactable
+using UnityEngine;
+
+public interface IInteractable
 {
-    void OnInteract();
+    void Interact();
     void OnFocus();
     void OnLoseFocus();
 }

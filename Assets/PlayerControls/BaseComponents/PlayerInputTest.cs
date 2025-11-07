@@ -8,9 +8,6 @@ public class PlayerInputTest : MonoBehaviour
     private void Awake()
     {
         controls = new PlayerControls();
-
-        // Subscribe to input actions
-        controls.Player.Jump.performed += ctx => Jump();
     }
 
     private void OnEnable()
@@ -30,10 +27,5 @@ public class PlayerInputTest : MonoBehaviour
 
         // Debug whatÅfs happening
         Debug.Log($"Move: {moveInput}, Look: {lookInput}");
-    }
-
-    private void Jump()
-    {
-        Debug.Log("Jump pressed!");
     }
 }
