@@ -5,4 +5,6 @@ public interface IInteractable
     void Interact();
     void OnFocus();
     void OnLoseFocus();
+    void OnProximityEnter();
+    void OnProximityExit();
 }

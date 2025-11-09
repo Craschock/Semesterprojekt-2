@@ -7,8 +7,10 @@ public class PlayerInteraction : MonoBehaviour
     private Camera cam;
 
     [Header("Interaction Settings")]
-    public float interactionRange = 3f;   // How far the player can reach
+    public float interactionRange = 3f;
+    public float proximityRange = 6f;
     private IInteractable currentInteractable;
+    private IInteractable nearbyInteractable;
 
     private void Awake()
     {
@@ -31,6 +33,7 @@ public class PlayerInteraction : MonoBehaviour
     private void Update()
     {
         HandleRaycast();
+        HandleProximity();
     }
 
     void HandleRaycast()
@@ -54,7 +57,6 @@ public class PlayerInteraction : MonoBehaviour
             }
         }
 
-        // If nothing interactable is hit
         if (currentInteractable != null)
         {
             currentInteractable.OnLoseFocus();
@@ -62,9 +64,46 @@ public class PlayerInteraction : MonoBehaviour
         }
     }
 
+    void HandleProximity()
+    {
+        // Cast a small sphere around the player to find nearby interactables
+        Collider[] hits = Physics.OverlapSphere(cam.transform.position, proximityRange);
+
+        IInteractable closest = null;
+        float closestDist = float.MaxValue;
+
+        foreach (var hit in hits)
+        {
+            var interactable = hit.GetComponent<IInteractable>();
+            if (interactable != null)
+            {
+                float dist = Vector3.Distance(cam.transform.position, hit.transform.position);
+                if (dist < closestDist)
+                {
+                    closest = interactable;
+                    closestDist = dist;
+                }
+            }
+        }
+
+        // If something new is near
+        if (closest != nearbyInteractable)
+        {
+            nearbyInteractable?.OnProximityExit();
+            nearbyInteractable = closest;
+            nearbyInteractable?.OnProximityEnter();
+        }
+
+        // If no interactables are near
+        if (closest == null && nearbyInteractable != null)
+        {
+            nearbyInteractable.OnProximityExit();
+            nearbyInteractable = null;
+        }
+    }
+
     private void OnInteract(InputAction.CallbackContext ctx)
     {
-        if (currentInteractable != null)
-            currentInteractable.Interact();
+        currentInteractable?.Interact();
     }
 }

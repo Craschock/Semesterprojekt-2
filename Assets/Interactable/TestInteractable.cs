@@ -2,6 +2,10 @@ using UnityEngine;
 
 public class TestInteractable : MonoBehaviour, IInteractable
 {
+    private int defaultLayer = 0;
+    private int proximityLayer = 6;
+    private int highlightLayer = 7;
+
     public void Interact()
     {
         Debug.Log($"{name} was interacted with!");
@@ -10,14 +14,21 @@ public class TestInteractable : MonoBehaviour, IInteractable
 
     public void OnFocus()
     {
-        Debug.Log($"{name} focused");
-        // Optional: highlight object or change color
-        GetComponent<Renderer>().material.color = Color.yellow;
+        gameObject.layer = highlightLayer;
     }
 
     public void OnLoseFocus()
     {
-        Debug.Log($"{name} lost focus");
-        GetComponent<Renderer>().material.color = Color.white;
+        gameObject.layer = proximityLayer;
+    }
+
+    public void OnProximityEnter()
+    {
+        gameObject.layer = proximityLayer;
+    }
+
+    public void OnProximityExit()
+    {
+        gameObject.layer = defaultLayer;
     }
 }
