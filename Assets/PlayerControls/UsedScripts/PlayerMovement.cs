@@ -10,9 +10,17 @@ public class PlayerMovement : MonoBehaviour
     private Vector2 moveInput;
     private bool isSprinting;
 
+    [Header("Camera Effects")]
+    public Camera playerCamera;
+    public float normalFOV = 60f;
+    public float sprintFOV = 75f;
+    public float fovChangeSpeed = 8f;
+
+    [Header("Movement Speed")]
     public float walkSpeed = 5f;
     public float sprintSpeed = 9f;
 
+    [Header("Stamina")]
     public float stamina = 100f;
     public float maxStamina = 100f;
     public float staminaDrain = 20f;
@@ -37,6 +45,7 @@ public class PlayerMovement : MonoBehaviour
     {
         MovePlayer();
         HandleStamina();
+        HandleFOV();
     }
 
     void MovePlayer()
@@ -57,6 +66,11 @@ public class PlayerMovement : MonoBehaviour
         controller.Move(velocity * Time.deltaTime);
     }
 
+    public bool IsRunning() //Check if this bitchass is running for the headbob
+    {
+        return isSprinting && stamina > 0 && moveInput.magnitude > 0;
+    }
+
     void HandleStamina()
     {
         if (isSprinting && moveInput.magnitude > 0)
@@ -66,6 +80,19 @@ public class PlayerMovement : MonoBehaviour
 
         stamina = Mathf.Clamp(stamina, 0, maxStamina);
     }
+
+    void HandleFOV()
+    {
+        if (playerCamera == null) return;
+
+        bool canSprint = isSprinting && stamina > 0 && moveInput.magnitude > 0;
+
+        float targetFOV = canSprint ? sprintFOV : normalFOV;
+
+        playerCamera.fieldOfView =
+            Mathf.Lerp(playerCamera.fieldOfView, targetFOV, Time.deltaTime * fovChangeSpeed);
+    }
+
 
     public bool IsMoving() => moveInput.magnitude > 0.1f;
     public float GetStaminaPercent() => stamina / maxStamina;

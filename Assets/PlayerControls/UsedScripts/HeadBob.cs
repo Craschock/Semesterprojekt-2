@@ -2,8 +2,14 @@ using UnityEngine;
 
 public class HeadBob : MonoBehaviour
 {
-    public float bobSpeed = 14f;       // Frequency of the bob
-    public float bobAmount = 0.05f;    // Amplitude of the bob
+    [Header("Walk Bob Settings")]
+    public float bobSpeed = 14f;       //Frequency of the bob
+    public float bobAmount = 0.05f;    //Amplitude of the bob
+
+    [Header("Sprint Bob Settings")]                 //When sprinting
+    public float sprintBobSpeedMultiplier = 1.6f;   //Frequency multiplier of bob
+    public float sprintBobAmountMultiplier = 1.8f;  //Ampluitude multiplier of bob
+
     public PlayerMovement playerMovement;
 
     private float defaultYPos = 0;
@@ -20,8 +26,23 @@ public class HeadBob : MonoBehaviour
 
         if (playerMovement.IsMoving())
         {
-            timer += Time.deltaTime * bobSpeed;
-            localPos.y = defaultYPos + Mathf.Sin(timer) * bobAmount;
+            bool isSprinting = playerMovement.stamina > 0 &&
+                               playerMovement.GetStaminaPercent() < 1f &&
+                               playerMovement.IsMoving() &&
+                               playerMovement.GetComponent<PlayerMovement>().GetStaminaPercent() > 0 &&
+                               playerMovement.GetComponent<PlayerMovement>().IsRunning();
+
+            float speed = bobSpeed;
+            float amount = bobAmount;
+
+            if (playerMovement.IsRunning())
+            {
+                speed *= sprintBobSpeedMultiplier;
+                amount *= sprintBobAmountMultiplier;
+            }
+
+            timer += Time.deltaTime * speed;
+            localPos.y = defaultYPos + Mathf.Sin(timer) * amount;
         }
         else
         {
@@ -31,4 +52,5 @@ public class HeadBob : MonoBehaviour
 
         transform.localPosition = localPos;
     }
+
 }

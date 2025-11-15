@@ -1,109 +1,258 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class PlayerInteraction : MonoBehaviour
 {
-    private PlayerControls controls;
-    private Camera cam;
+    [Header("Interaction")]
+    public float interactDistance = 3f;
+    public Transform holdPoint;
+    public float pickupSmoothing = 6f;
+    public float holdSmoothing = 12f;
+    public float rotationSpeed = 80f;
 
-    [Header("Interaction Settings")]
-    public float interactionRange = 3f;
-    public float proximityRange = 6f;
+    [Header("Item Physics")]
+    public float maxHoldDistance = 3f;
+    public float wallCheckRadius = 0.3f;
+    public LayerMask environmentMask;
+
+    [Header("References")]
+    public PlayerMovement playerMovement;
+    public GameObject uiPrompt;
+
+    private float pickupBlend = 0f;
+
+    private Camera cam;
+    private PlayerControls input;
+
+    private InputAction interactAction;
+    private InputAction focusAction;
+    private InputAction rotateXAction;
+    private InputAction rotateYAction;
+
     private IInteractable currentInteractable;
-    private IInteractable nearbyInteractable;
+    private PickupInteractable heldItem;
+
+    private bool inFocusMode = false;
+    private bool interactPressedThisFrame = false;
+
 
     private void Awake()
     {
-        controls = new PlayerControls();
-        cam = GetComponent<Camera>();
+        cam = Camera.main;
+        input = new PlayerControls();
+
+        interactAction = input.Player.Interact;
+        focusAction = input.Player.Focus;
+        rotateXAction = input.Player.RotateX;
+        rotateYAction = input.Player.RotateY;
+
+        interactAction.Enable();
+        focusAction.Enable();
+        rotateXAction.Enable();
+        rotateYAction.Enable();
     }
 
-    private void OnEnable()
+    private void Start()
     {
-        controls.Enable();
-        controls.Player.Interact.performed += OnInteract;
-    }
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
 
-    private void OnDisable()
-    {
-        controls.Player.Interact.performed -= OnInteract;
-        controls.Disable();
+        if (uiPrompt != null)
+            uiPrompt.SetActive(false);
     }
 
     private void Update()
     {
+        interactPressedThisFrame = interactAction.WasPerformedThisFrame();
         HandleRaycast();
-        HandleProximity();
+        HandleHeldObject();
+        HandleFocusModeToggle();
+        HandleHeldInteract();
     }
 
-    void HandleRaycast()
+    // ────────────────────────────────────────────────
+    // 1. RAYCAST INTERACTION
+    // ────────────────────────────────────────────────
+    private void HandleRaycast()
     {
+        if (heldItem != null)
+        {
+            ShowPrompt("Press [E] to Drop");
+            return;
+        }
+
         Ray ray = new Ray(cam.transform.position, cam.transform.forward);
         RaycastHit hit;
 
-        if (Physics.Raycast(ray, out hit, interactionRange))
+        if (Physics.Raycast(ray, out hit, interactDistance))
         {
-            var interactable = hit.collider.GetComponent<IInteractable>();
+            IInteractable interactable = hit.collider.GetComponent<IInteractable>();
 
-            if (interactable != null)
+            if (interactable != currentInteractable)
             {
-                if (currentInteractable != interactable)
-                {
-                    currentInteractable?.OnLoseFocus();
-                    currentInteractable = interactable;
-                    currentInteractable.OnFocus();
-                }
-                return;
+                currentInteractable?.OnLoseFocus();
+                currentInteractable = interactable;
+                currentInteractable?.OnFocus();
+            }
+
+            if (currentInteractable != null)
+                ShowPrompt("Press [E] to Pick Up");
+            else
+                HidePrompt();
+
+            // ✔ Pick up ONLY when not holding anything
+            if (interactPressedThisFrame && heldItem == null)
+            {
+                currentInteractable?.OnInteract(this);
+                interactPressedThisFrame = false; // consume press
             }
         }
-
-        if (currentInteractable != null)
+        else
         {
-            currentInteractable.OnLoseFocus();
+            currentInteractable?.OnLoseFocus();
             currentInteractable = null;
+            HidePrompt();
         }
     }
 
-    void HandleProximity()
+    // ────────────────────────────────────────────────
+    // 2. HANDLE HELD OBJECT
+    // ────────────────────────────────────────────────
+    private void HandleHeldObject()
     {
-        // Cast a small sphere around the player to find nearby interactables
-        Collider[] hits = Physics.OverlapSphere(cam.transform.position, proximityRange);
+        if (heldItem == null)
+            return;
 
-        IInteractable closest = null;
-        float closestDist = float.MaxValue;
+        Transform item = heldItem.transform;
 
-        foreach (var hit in hits)
+        // Increase pickup blend until it reaches 1
+        pickupBlend = Mathf.Clamp01(pickupBlend + Time.deltaTime * pickupSmoothing);
+
+        // Determine target position and rotation
+        Vector3 targetPos = holdPoint.position;
+        Quaternion targetRot = holdPoint.rotation;
+
+        // Wall clipping check
+        Vector3 direction = holdPoint.position - cam.transform.position;
+        float distance = direction.magnitude;
+
+        if (Physics.SphereCast(cam.transform.position, wallCheckRadius, direction,
+            out RaycastHit hit, distance, environmentMask))
         {
-            var interactable = hit.GetComponent<IInteractable>();
-            if (interactable != null)
-            {
-                float dist = Vector3.Distance(cam.transform.position, hit.transform.position);
-                if (dist < closestDist)
-                {
-                    closest = interactable;
-                    closestDist = dist;
-                }
-            }
+            targetPos = hit.point - direction.normalized * 0.1f;
         }
 
-        // If something new is near
-        if (closest != nearbyInteractable)
-        {
-            nearbyInteractable?.OnProximityExit();
-            nearbyInteractable = closest;
-            nearbyInteractable?.OnProximityEnter();
-        }
+        // Smooth movement
+        item.position = Vector3.Lerp(item.position, targetPos, Time.deltaTime * holdSmoothing * pickupBlend);
 
-        // If no interactables are near
-        if (closest == null && nearbyInteractable != null)
+        // Smooth rotation
+        item.rotation = Quaternion.Slerp(item.rotation, targetRot, Time.deltaTime * holdSmoothing * pickupBlend);
+    }
+
+    // ────────────────────────────────────────────────
+    // 3. DROP ONLY WHEN HOLDING
+    // ────────────────────────────────────────────────
+    private void HandleHeldInteract()
+    {
+        if (heldItem != null && interactPressedThisFrame)
         {
-            nearbyInteractable.OnProximityExit();
-            nearbyInteractable = null;
+            DropItem();
+            interactPressedThisFrame = false; // consume press
         }
     }
 
-    private void OnInteract(InputAction.CallbackContext ctx)
+    // ────────────────────────────────────────────────
+    // 4. FOCUS MODE & ROTATION
+    // ────────────────────────────────────────────────
+    private void HandleFocusModeToggle()
     {
-        currentInteractable?.Interact();
+        if (heldItem == null)
+        {
+            if (inFocusMode)
+                ExitFocusMode();
+            return;
+        }
+
+        if (focusAction.WasPerformedThisFrame())
+        {
+            if (!inFocusMode) EnterFocusMode();
+            else ExitFocusMode();
+        }
+
+        if (inFocusMode)
+            RotateHeldItem();
+    }
+
+    private void EnterFocusMode()
+    {
+        inFocusMode = true;
+        playerMovement.enabled = false;
+        HidePrompt();
+    }
+
+    private void ExitFocusMode()
+    {
+        inFocusMode = false;
+        playerMovement.enabled = true;
+        ShowPrompt("Press [E] to Drop");
+    }
+
+    private void RotateHeldItem()
+    {
+        float rotX = rotateXAction.ReadValue<float>();
+        float rotY = rotateYAction.ReadValue<float>();
+
+        heldItem.transform.Rotate(cam.transform.up, rotX * rotationSpeed * Time.deltaTime, Space.World);
+        heldItem.transform.Rotate(cam.transform.right, -rotY * rotationSpeed * Time.deltaTime, Space.World);
+    }
+
+    // ────────────────────────────────────────────────
+    // 5. PICKUP & DROP
+    // ────────────────────────────────────────────────
+    public void PickUpItem(PickupInteractable item)
+    {
+        heldItem = item;
+        heldItem.SetHeld(true);
+
+        Rigidbody rb = item.GetComponent<Rigidbody>();
+        rb.useGravity = false;
+        rb.isKinematic = true;
+
+        item.transform.SetParent(null);
+        ShowPrompt("Press [E] to Drop");
+
+        pickupBlend = 0f; //Just to reset smoothing lmao
+    }
+
+    public void DropItem()
+    {
+        if (heldItem == null) return;
+
+        Rigidbody rb = heldItem.GetComponent<Rigidbody>();
+        rb.useGravity = true;
+        rb.isKinematic = false;
+
+        heldItem.SetHeld(false);
+        heldItem = null;
+
+        ExitFocusMode();
+    }
+
+    // ────────────────────────────────────────────────
+    // 6. UI PROMPTS
+    // ────────────────────────────────────────────────
+    private void ShowPrompt(string text)
+    {
+        if (uiPrompt == null) return;
+
+        uiPrompt.SetActive(true);
+        uiPrompt.GetComponent<TMPro.TextMeshProUGUI>().text = text;
+    }
+
+    private void HidePrompt()
+    {
+        if (uiPrompt == null) return;
+
+        uiPrompt.SetActive(false);
     }
 }

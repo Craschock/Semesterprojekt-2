@@ -2,9 +2,7 @@ using UnityEngine;
 
 public interface IInteractable
 {
-    void Interact();
+    void OnInteract(PlayerInteraction interactor);
     void OnFocus();
     void OnLoseFocus();
-    void OnProximityEnter();
-    void OnProximityExit();
 }
