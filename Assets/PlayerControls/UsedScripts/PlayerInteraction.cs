@@ -238,6 +238,16 @@ public class PlayerInteraction : MonoBehaviour
         ExitFocusMode();
     }
 
+    public bool HeldItemExists()
+    {
+        return heldItem != null;
+    }
+
+    public Transform GetHeldItemTransform()
+    {
+        return heldItem != null ? heldItem.transform : null;
+    }
+
     // ────────────────────────────────────────────────
     // 6. UI PROMPTS
     // ────────────────────────────────────────────────

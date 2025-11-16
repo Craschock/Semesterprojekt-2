@@ -2,17 +2,20 @@ using UnityEngine;
 
 public class LoopTeleport : MonoBehaviour
 {
-    public Transform targetLandingRoot;     // Where to teleport TO
-    public Transform thisLandingRoot;       // The root of THIS landing
+    public Transform targetLandingRoot;     // Landing to teleport TO
+    public Transform thisLandingRoot;       // Landing this teleporter belongs to
     public CharacterController characterController;
 
-    // *** Shared cooldown between all teleporter instances ***
+    [Header("Item Teleport")]
+    public PlayerInteraction playerInteraction;   // reference to PlayerInteraction
+    public Transform holdPoint;                    // same one used during pickup
+
+    // Shared cooldown across teleporters
     private static float teleportCooldown = 0f;
     private float cooldownDuration = 0.3f;
 
     private void Update()
     {
-        // Count down the cooldown
         if (teleportCooldown > 0f)
             teleportCooldown -= Time.deltaTime;
     }
@@ -22,25 +25,46 @@ public class LoopTeleport : MonoBehaviour
         if (!other.CompareTag("Player"))
             return;
 
-        // If cooldown active Å® skip teleport
         if (teleportCooldown > 0f)
             return;
 
         Transform player = other.transform;
 
-        // Get offset relative to landing so position matches on the other end
-        Vector3 offset = player.position - thisLandingRoot.position;
+        // PLAYER OFFSET
+        Vector3 playerOffset = player.position - thisLandingRoot.position;
 
-        // Disable controller before teleporting
+        // ITEM OFFSET (if holding one)
+        Vector3 itemLocalOffset = Vector3.zero;
+        bool hasItem = false;
+
+        if (playerInteraction != null && playerInteraction.HeldItemExists())
+        {
+            Transform item = playerInteraction.GetHeldItemTransform();
+            if (item != null)
+            {
+                hasItem = true;
+                itemLocalOffset = item.position - player.position;
+            }
+        }
+
+        // TELEPORT NOW
         characterController.enabled = false;
 
-        // Teleport the player
-        player.position = targetLandingRoot.position + offset;
+        Vector3 newPlayerPos = targetLandingRoot.position + playerOffset;
+        player.position = newPlayerPos;
 
-        // Re-enable controller
+        // TELEPORT ITEM IF ONE IS HELD
+        if (hasItem)
+        {
+            Transform item = playerInteraction.GetHeldItemTransform();
+            item.position = newPlayerPos + itemLocalOffset;
+
+            holdPoint.position = newPlayerPos + (holdPoint.position - player.position);
+        }
+
         characterController.enabled = true;
 
-        // Activate teleport cooldown so the destination trigger doesnÅft fire immediately
+        // ACTIVATE COOLDOWN SO WE DO NOT TELEPORT AGAIN IMMEDIATELY FUCKASS
         teleportCooldown = cooldownDuration;
     }
 }

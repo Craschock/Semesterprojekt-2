@@ -5,7 +5,7 @@ public class OutlineController : MonoBehaviour
     public float proximityDistance = 5f;
 
     private Transform player;
-    private int defaultLayer = 0;
+    private int defaultLayer = 3;
     private int proximityLayer = 6;
     private int highlightLayer = 7;
 
