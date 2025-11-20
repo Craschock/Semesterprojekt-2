@@ -1,16 +1,21 @@
 using UnityEngine;
 
+/// <summary>
+/// Teleports the player between two landing roots while preserving local offset.
+/// Also teleports the held item (if any) by preserving its offset to the player.
+/// A short global cooldown prevents immediate re-triggering.
+/// </summary>
 public class LoopTeleport : MonoBehaviour
 {
-    public Transform targetLandingRoot;     // Landing to teleport TO
-    public Transform thisLandingRoot;       // Landing this teleporter belongs to
+    [Header("Landing Transforms")]
+    public Transform targetLandingRoot;     // landing to teleport TO
+    public Transform thisLandingRoot;       // landing this teleporter belongs to
     public CharacterController characterController;
 
     [Header("Item Teleport")]
-    public PlayerInteraction playerInteraction;   // reference to PlayerInteraction
-    public Transform holdPoint;                    // same one used during pickup
+    public PlayerInteraction playerInteraction; // reference to PlayerInteraction to query held item
 
-    // Shared cooldown across teleporters
+    // shared cooldown across all teleporters to avoid bouncing
     private static float teleportCooldown = 0f;
     private float cooldownDuration = 0.3f;
 
@@ -22,18 +27,20 @@ public class LoopTeleport : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        // only teleport the player (requires player to be tagged "Player")
         if (!other.CompareTag("Player"))
             return;
 
+        // respect global cooldown
         if (teleportCooldown > 0f)
             return;
 
         Transform player = other.transform;
 
-        // PLAYER OFFSET
+        // compute player's local offset inside this landing
         Vector3 playerOffset = player.position - thisLandingRoot.position;
 
-        // ITEM OFFSET (if holding one)
+        // if player holds an item, compute its offset to the player so we can teleport it too
         Vector3 itemLocalOffset = Vector3.zero;
         bool hasItem = false;
 
@@ -47,24 +54,27 @@ public class LoopTeleport : MonoBehaviour
             }
         }
 
-        // TELEPORT NOW
+        // disable controller before changing position to avoid CharacterController collisions
         characterController.enabled = false;
 
+        // perform teleport
         Vector3 newPlayerPos = targetLandingRoot.position + playerOffset;
         player.position = newPlayerPos;
 
-        // TELEPORT ITEM IF ONE IS HELD
+        // if an item is held, teleport it by preserving its relative offset to the player
         if (hasItem)
         {
             Transform item = playerInteraction.GetHeldItemTransform();
-            item.position = newPlayerPos + itemLocalOffset;
-
-            holdPoint.position = newPlayerPos + (holdPoint.position - player.position);
+            if (item != null)
+            {
+                item.position = newPlayerPos + itemLocalOffset;
+            }
         }
 
+        // re-enable controller
         characterController.enabled = true;
 
-        // ACTIVATE COOLDOWN SO WE DO NOT TELEPORT AGAIN IMMEDIATELY FUCKASS
+        // set cooldown so destination trigger doesn't immediately re-fire
         teleportCooldown = cooldownDuration;
     }
 }

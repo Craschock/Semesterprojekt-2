@@ -1,6 +1,10 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
+/// <summary>
+/// Basic CharacterController-based movement with sprint + stamina and smooth FOV change.
+/// Minor cleanup and concise comments added.
+/// </summary>
 [RequireComponent(typeof(CharacterController))]
 public class PlayerMovement : MonoBehaviour
 {
@@ -34,6 +38,7 @@ public class PlayerMovement : MonoBehaviour
         controls = new PlayerControls();
         controller = GetComponent<CharacterController>();
 
+        // toggle sprint state using Input System bindings
         controls.Player.Sprint.performed += ctx => isSprinting = true;
         controls.Player.Sprint.canceled += ctx => isSprinting = false;
     }
@@ -48,6 +53,7 @@ public class PlayerMovement : MonoBehaviour
         HandleFOV();
     }
 
+    // basic movement using CharacterController
     void MovePlayer()
     {
         moveInput = controls.Player.Move.ReadValue<Vector2>();
@@ -58,6 +64,7 @@ public class PlayerMovement : MonoBehaviour
 
         controller.Move(move * speed * Time.deltaTime);
 
+        // simple gravity handling
         if (controller.isGrounded && velocity.y < 0)
             velocity.y = -2f;
         else
@@ -66,11 +73,13 @@ public class PlayerMovement : MonoBehaviour
         controller.Move(velocity * Time.deltaTime);
     }
 
-    public bool IsRunning() //Check if this bitchass is running for the headbob
+    // returns true if the player is running (used by HeadBob)
+    public bool IsRunning()
     {
         return isSprinting && stamina > 0 && moveInput.magnitude > 0;
     }
 
+    // stamina drain & regen
     void HandleStamina()
     {
         if (isSprinting && moveInput.magnitude > 0)
@@ -78,22 +87,21 @@ public class PlayerMovement : MonoBehaviour
         else
             stamina += staminaRegen * Time.deltaTime;
 
-        stamina = Mathf.Clamp(stamina, 0, maxStamina);
+        stamina = Mathf.Clamp(stamina, 0f, maxStamina);
     }
 
+    // smooth change of camera FOV when sprinting
     void HandleFOV()
     {
         if (playerCamera == null) return;
 
         bool canSprint = isSprinting && stamina > 0 && moveInput.magnitude > 0;
-
         float targetFOV = canSprint ? sprintFOV : normalFOV;
 
-        playerCamera.fieldOfView =
-            Mathf.Lerp(playerCamera.fieldOfView, targetFOV, Time.deltaTime * fovChangeSpeed);
+        playerCamera.fieldOfView = Mathf.Lerp(playerCamera.fieldOfView, targetFOV, Time.deltaTime * fovChangeSpeed);
     }
 
-
+    // helper used by other scripts
     public bool IsMoving() => moveInput.magnitude > 0.1f;
     public float GetStaminaPercent() => stamina / maxStamina;
 }

@@ -1,5 +1,9 @@
 using UnityEngine;
 
+/// <summary>
+/// Example pickup interactable. Implements IInteractable interface used by PlayerInteraction.
+/// Keeps a small OutlineController to manage outline visuals.
+/// </summary>
 public class PickupInteractable : MonoBehaviour, IInteractable
 {
     public bool IsHeld { get; private set; } = false;
@@ -11,18 +15,21 @@ public class PickupInteractable : MonoBehaviour, IInteractable
         outlineController = GetComponent<OutlineController>();
     }
 
+    // called when player looks at this item
     public void OnFocus()
     {
         if (!IsHeld)
             outlineController.SetHighlight();
     }
 
+    // called when player looks away
     public void OnLoseFocus()
     {
         if (!IsHeld)
             outlineController.SetProximityOrNone();
     }
 
+    // called when player presses interact (E)
     public void OnInteract(PlayerInteraction interactor)
     {
         if (IsHeld)
@@ -35,9 +42,10 @@ public class PickupInteractable : MonoBehaviour, IInteractable
         }
     }
 
+    // mark item as held/unheld
     public void SetHeld(bool held)
     {
         IsHeld = held;
-        outlineController.DisableOutline(); // no outline while held
+        outlineController.DisableOutline(); // disable outlines while being held
     }
 }
