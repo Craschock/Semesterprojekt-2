@@ -104,7 +104,7 @@ public class PlayerInteraction : MonoBehaviour
         // if holding item, we don't perform raycast pickup checks
         if (heldItem != null)
         {
-            ShowPrompt("Press [E] to Drop");
+            ShowPrompt("Leck meine Eier");
             return;
         }
 
