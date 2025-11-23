@@ -2,9 +2,11 @@
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// Handles player interaction: raycast picking, holding, focus/inspect mode and rotation limits.
-/// Comments explain sections and purpose of public fields.
-/// Minor cleanup applied but logic preserved.
+/// Handles player interaction:
+/// - pick up / drop items
+/// - preview placement on PlaceSlot
+/// - place items into PlaceSlot or take from it
+/// - disables rotation while previewing
 /// </summary>
 public class PlayerInteraction : MonoBehaviour
 {
@@ -15,200 +17,317 @@ public class PlayerInteraction : MonoBehaviour
     public float holdSmoothing = 12f;        // smoothing speed for following the hold point
     public float rotationSpeed = 80f;        // base rotation speed for focus mode
 
+    [Header("Preview")]
+    public float previewSmoothing = 8f;      // smoothing when previewing to slot (higher = snappier)
+    public LayerMask raycastMask;            // layers to raycast against (ensure HeldItem layer is excluded)
+
     [Header("Focus Mode")]
-    public float focusRotationMultiplier = 3f; // extra sensitivity multiplier for focus rotation
-    public float maxYaw = 135f;               // horizontal limit (A/D)
-    public float maxPitch = 45f;              // vertical limit (W/S)
-    public float focusReturnSmoothing = 1f;   // blending speed when returning from focus rotation
+    public float focusRotationMultiplier = 3f;
+    public float maxYaw = 135f;   // horizontal left/right limit (A/D)
+    public float maxPitch = 45f;  // vertical up/down limit (W/S)
+    public float focusReturnSmoothing = 1f;
 
     [Header("Item Physics")]
-    public float maxHoldDistance = 3f;        // max allowed distance to hold item (safety)
-    public float wallCheckRadius = 0.3f;      // spherecast radius to avoid clipping into walls
-    public LayerMask environmentMask;         // layers considered "environment" for clipping checks
+    public float maxHoldDistance = 3f;
+    public float wallCheckRadius = 0.3f;
+    public LayerMask environmentMask;
 
     [Header("References")]
-    public PlayerMovement playerMovement;     // disable movement while inspecting
-    public PlayerLook playerLook;             // toggle look input while inspecting
-    public GameObject uiPrompt;               // small prompt UI object (TextMeshProUGUI expected)
+    public PlayerMovement playerMovement;
+    public PlayerLook playerLook;
+    public GameObject uiPrompt;
 
-    // --- internal state -------------------------------------------------
-    private Vector2 focusRotationOffset = Vector2.zero; // x = yaw (left/right), y = pitch (up/down)
-    private Quaternion focusStartRotation;              // rotation snapshot at EnterFocus
-    private float focusReturnBlend = 1f;                // blend used when returning from focus
-    private float pickupBlend = 0f;                     // blend used when picking up (0 -> 1)
+    // internal smoothing & rotation state
+    private Vector2 focusRotationOffset = Vector2.zero; // x = yaw, y = pitch
+    private Quaternion focusStartRotation;
+    private float focusReturnBlend = 1f;
+    private float pickupBlend = 0f;
+    private float previewBlend = 0f;
 
+    // runtime
     private Camera cam;
     private PlayerControls input;
-
-    // input actions
     private InputAction interactAction;
     private InputAction focusAction;
     private InputAction rotateXAction;
     private InputAction rotateYAction;
 
-    // interactable state
-    private IInteractable currentInteractable;
-    private PickupInteractable heldItem;
+    private IInteractable currentInteractable;     // hit interactable (generic)
+    private PickupInteractable heldItem;           // currently held item (null if none)
+    private PlaceSlot previewSlot = null;          // slot currently previewing (null if none)
+    private bool isPreviewing = false;
 
-    // runtime flags
     private bool inFocusMode = false;
     private bool interactPressedThisFrame = false;
 
-    // ------------------------------------------------------------------
+    // layer name for held items (create this in Unity)
+    private readonly string heldItemLayerName = "HeldItem";
+    private int heldItemLayerIndex = -1;
+
     private void Awake()
     {
-        // cache main camera and create input wrapper
         cam = Camera.main;
         input = new PlayerControls();
 
-        // bind actions (these must exist in your input actions asset)
         interactAction = input.Player.Interact;
         focusAction = input.Player.Focus;
         rotateXAction = input.Player.RotateX;
         rotateYAction = input.Player.RotateY;
 
-        // enable used actions
         interactAction.Enable();
         focusAction.Enable();
         rotateXAction.Enable();
         rotateYAction.Enable();
+
+        // compute held layer index (user must create this layer in editor)
+        heldItemLayerIndex = LayerMask.NameToLayer(heldItemLayerName);
     }
 
     private void Start()
     {
-        // lock cursor for gameplay
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
         if (uiPrompt != null)
             uiPrompt.SetActive(false);
+
+        // If raycastMask is not configured, default to everything except HeldItem (if layer exists)
+        if (raycastMask == 0)
+        {
+            raycastMask = Physics.DefaultRaycastLayers;
+            if (heldItemLayerIndex >= 0)
+                raycastMask &= ~(1 << heldItemLayerIndex); // ignore held item layer for raycasts
+        }
     }
 
     private void Update()
     {
-        // read single-frame interact press, then run handlers
         interactPressedThisFrame = interactAction.WasPerformedThisFrame();
-        HandleRaycast();           // find interactables under reticle
-        HandleHeldObject();        // move held item toward hold point (or clipping fallback)
+
+        HandleRaycast();           // handles both items and slots
+        HandleHeldObject();        // move held item toward holdPoint or previewPoint
         HandleFocusModeToggle();   // toggle focus and handle rotation
-        HandleHeldInteract();      // drop when holding and pressing interact
+        HandleHeldInteract();      // drop / place / take depending on context
     }
 
-    // ------------------------------------------------------------------
-    // 1) Raycast-based detection & pickup
-    // - shows/hides prompt
-    // - calls OnInteract(this) on the IInteractable when E pressed
-    // ------------------------------------------------------------------
+    // --------------------------
+    // Raycast and detect hit
+    // - prefers PlaceSlot if hit
+    // - handles preview state when holding an item and aiming at a slot
+    // --------------------------
     private void HandleRaycast()
     {
-        // if holding item, we don't perform raycast pickup checks
-        if (heldItem != null)
-        {
-            ShowPrompt("Leck meine Eier");
-            return;
-        }
-
         Ray ray = new Ray(cam.transform.position, cam.transform.forward);
         RaycastHit hit;
 
-        if (Physics.Raycast(ray, out hit, interactDistance))
+        // Use configured mask — ensures held item doesn't block raycast
+        if (Physics.Raycast(ray, out hit, interactDistance, raycastMask))
         {
-            IInteractable interactable = hit.collider.GetComponent<IInteractable>();
-
-            // focus state transition
-            if (interactable != currentInteractable)
+            // Try place slot first
+            PlaceSlot slot = hit.collider.GetComponent<PlaceSlot>();
+            if (slot != null)
             {
-                currentInteractable?.OnLoseFocus();
-                currentInteractable = interactable;
-                currentInteractable?.OnFocus();
+                // Manage focus transitions for slot
+                if (currentInteractable != slot)
+                {
+                    currentInteractable?.OnLoseFocus();
+                    currentInteractable = slot;
+                    currentInteractable?.OnFocus();
+                }
+
+                // If player is holding an item -> preview placement
+                if (heldItem != null)
+                {
+                    // start preview if new
+                    if (previewSlot != slot)
+                    {
+                        previewSlot = slot;
+                        isPreviewing = true;
+                        previewBlend = 0f; // reset preview smoothing
+                        // disable rotation while previewing
+                        // (player can rotate before previewing but not while previewing)
+                    }
+
+                    ShowPrompt("Press [E] to Place Item");
+                }
+                else
+                {
+                    // not holding: if slot has an item, allow taking it
+                    if (slot.HasItem())
+                        ShowPrompt("Press [E] to Take Item");
+                    else
+                        HidePrompt();
+                }
+
+                return;
             }
 
-            // prompt UI
-            if (currentInteractable != null)
-                ShowPrompt("Press [E] to Pick Up");
-            else
-                HidePrompt();
-
-            // pick up only if not holding anything and interact pressed
-            if (interactPressedThisFrame && heldItem == null)
+            // Not a slot, check if it's a pickup interactable
+            PickupInteractable pickup = hit.collider.GetComponent<PickupInteractable>();
+            if (pickup != null)
             {
-                currentInteractable?.OnInteract(this);
-                interactPressedThisFrame = false; // consume press so it doesn't double-fire
+                if (pickup.IsSlotted)
+                    return; // treat it as "not a pickup". prevents double prompt when item is slotted
+                // if we were previewing a slot, cancel preview
+                if (isPreviewing)
+                    CancelPreview();
+
+                if (currentInteractable != pickup)
+                {
+                    currentInteractable?.OnLoseFocus();
+                    currentInteractable = pickup;
+                    currentInteractable?.OnFocus();
+                }
+
+                // If holding an item and looking at a world pickup, show Place prompt? no -> show Drop
+                if (heldItem != null)
+                {
+                    ShowPrompt("Press [E] to Drop");
+                }
+                else
+                {
+                    ShowPrompt("Press [E] to Pick Up");
+                }
+
+                return;
             }
+
+            // Hit something else -> clear focus/preview
+            currentInteractable?.OnLoseFocus();
+            currentInteractable = null;
+            if (isPreviewing) CancelPreview();
+            HidePrompt();
         }
         else
         {
-            // no hit -> clear focus and UI
+            // nothing hit
             currentInteractable?.OnLoseFocus();
             currentInteractable = null;
+            if (isPreviewing) CancelPreview();
             HidePrompt();
         }
     }
 
-    // ------------------------------------------------------------------
-    // 2) Move / rotate the held item toward the hold point.
-    //    Handles wall clipping by spherecasting toward hold point.
-    // ------------------------------------------------------------------
+    // --------------------------
+    // Move held item toward hold or preview or slot preview
+    // --------------------------
     private void HandleHeldObject()
     {
-        if (heldItem == null)
-            return;
+        if (heldItem == null) return;
 
         Transform item = heldItem.transform;
 
-        // gradually ramp pickup blend to 1 for smooth transition
+        // ramp pickup blend to 1 for pickup transitions
         pickupBlend = Mathf.Clamp01(pickupBlend + Time.deltaTime * pickupSmoothing);
 
-        // target position is normally the holdPoint, but spherecast to avoid clipping into walls
-        Vector3 targetPos = holdPoint.position;
+        // choose target position/rotation depending on preview state
+        Vector3 targetPos;
+        Quaternion targetRot;
+
+        if (isPreviewing && previewSlot != null)
+        {
+            // preview mode: lerp toward slot's preview transform
+            Transform previewT = previewSlot.GetPreviewTransform();
+            targetPos = previewT.position;
+            targetRot = previewT.rotation;
+
+            // smooth with a previewBlend (snappier than normal hold)
+            previewBlend = Mathf.Clamp01(previewBlend + Time.deltaTime * previewSmoothing);
+            item.position = Vector3.Lerp(item.position, targetPos, Time.deltaTime * holdSmoothing * previewBlend);
+            item.rotation = Quaternion.Slerp(item.rotation, targetRot, Time.deltaTime * holdSmoothing * previewBlend);
+            return;
+        }
+
+        // Normal held behavior: follow holdPoint, with wall clipping protection
+        targetPos = holdPoint.position;
+        targetRot = holdPoint.rotation;
+
         Vector3 direction = holdPoint.position - cam.transform.position;
         float distance = direction.magnitude;
-
         if (Physics.SphereCast(cam.transform.position, wallCheckRadius, direction, out RaycastHit hit, distance, environmentMask))
         {
-            // move item to a safe point before the geometry
             targetPos = hit.point - direction.normalized * 0.1f;
         }
 
-        // position smoothing (uses both holdSmoothing and pickupBlend)
         item.position = Vector3.Lerp(item.position, targetPos, Time.deltaTime * holdSmoothing * pickupBlend);
 
-        // rotation handling:
-        // - when in focus mode, rotation is handled in RotateHeldItem()
-        // - when not in focus, smoothly slerp back to the holdPoint's rotation (including returning from focus)
+        // rotation only reset when NOT in focus mode and NOT previewing
         if (!inFocusMode)
         {
             if (focusReturnBlend < 1f)
                 focusReturnBlend = Mathf.Clamp01(focusReturnBlend + Time.deltaTime * focusReturnSmoothing);
 
-            Quaternion targetRot = holdPoint.rotation;
             item.rotation = Quaternion.Slerp(item.rotation, targetRot, Time.deltaTime * holdSmoothing * focusReturnBlend);
         }
     }
 
-    // ------------------------------------------------------------------
-    // 3) Drop while holding - only when interact pressed
-    // ------------------------------------------------------------------
+    // --------------------------
+    // Drop / Place / Take logic depending on context
+    // - if previewing & interact pressed -> place into slot
+    // - if looking at a slot with item & not holding -> take item
+    // - if looking at pickup and not holding -> pick up
+    // - if holding and looking at nothing -> drop
+    // --------------------------
     private void HandleHeldInteract()
     {
-        if (heldItem != null && interactPressedThisFrame)
+        if (!interactPressedThisFrame) return;
+
+        // CASE: placing into preview slot
+        if (isPreviewing && previewSlot != null && heldItem != null)
         {
+            previewSlot.PlaceItem(heldItem);
+            // placed -> clear held reference
+            heldItem = null;
+            isPreviewing = false;
+            previewSlot = null;
+            HidePrompt();
+            interactPressedThisFrame = false;
+            return;
+        }
+
+        // If not holding and currentInteractable is a PlaceSlot with an item -> take it
+        PlaceSlot slot = currentInteractable as PlaceSlot;
+        if (slot != null && heldItem == null && slot.HasItem())
+        {
+            PickupInteractable item = slot.RemoveItem();
+            if (item != null)
+            {
+                // pick the removed item up
+                PickUpItem(item);
+            }
+            interactPressedThisFrame = false;
+            return;
+        }
+
+        // If current interactable is a PickupInteractable and not holding -> pick it up
+        PickupInteractable pickup = currentInteractable as PickupInteractable;
+        if (pickup != null && heldItem == null && !pickup.IsSlotted)
+        {
+            // this will call PickUpItem which sets held state
+            pickup.OnInteract(this);
+            interactPressedThisFrame = false;
+            return;
+        }
+
+        // If holding and nothing special -> drop
+        if (heldItem != null)
+        {
+            // drop in world
             DropItem();
-            interactPressedThisFrame = false; // consume
+            interactPressedThisFrame = false;
+            return;
         }
     }
 
-    // ------------------------------------------------------------------
-    // 4) Focus / Inspect Mode toggling
-    // - Enter focus: freeze player movement & disable mouse look
-    // - Exit focus: re-enable player and start returning object rotation smoothly
-    // ------------------------------------------------------------------
+    // --------------------------
+    // Focus / Inspect mode toggling
+    // - rotation is disabled while previewing (by early return)
+    // --------------------------
     private void HandleFocusModeToggle()
     {
         if (heldItem == null)
         {
-            if (inFocusMode)
-                ExitFocusMode();
+            if (inFocusMode) ExitFocusMode();
             return;
         }
 
@@ -225,11 +344,10 @@ public class PlayerInteraction : MonoBehaviour
     private void EnterFocusMode()
     {
         inFocusMode = true;
-        playerMovement.enabled = false;      // stop player moving
-        if (playerLook != null) playerLook.lookEnabled = false; // stop mouse look
+        playerMovement.enabled = false;
+        if (playerLook != null) playerLook.lookEnabled = false;
         HidePrompt();
 
-        // snapshot start rotation and reset offsets
         focusStartRotation = heldItem.transform.rotation;
         focusRotationOffset = Vector2.zero;
         focusReturnBlend = 1f;
@@ -242,42 +360,42 @@ public class PlayerInteraction : MonoBehaviour
         if (playerLook != null) playerLook.lookEnabled = true;
         ShowPrompt("Press [E] to Drop");
 
-        // trigger smooth return of rotation (focusReturnBlend is used in HandleHeldObject)
+        // start smooth return to hold rotation
         focusReturnBlend = 0f;
     }
 
-    // ------------------------------------------------------------------
-    // 5) Rotate the held item while in focus mode with separate yaw/pitch limits.
-    //    Uses angle-axis quaternions relative to the focusStartRotation.
-    // ------------------------------------------------------------------
+    // Rotate the held item while in focus mode, but DO NOT rotate while previewing
     private void RotateHeldItem()
     {
-        float rotX = rotateXAction.ReadValue<float>(); // A/D
-        float rotY = rotateYAction.ReadValue<float>(); // W/S
+        if (isPreviewing) return; // block rotation during preview
+
+        float rotX = rotateXAction.ReadValue<float>();
+        float rotY = rotateYAction.ReadValue<float>();
 
         float deltaYaw = rotX * rotationSpeed * focusRotationMultiplier * Time.deltaTime;
         float deltaPitch = -rotY * rotationSpeed * focusRotationMultiplier * Time.deltaTime;
 
-        // increment offsets
-        focusRotationOffset.x += deltaYaw;   // yaw (horizontal)
-        focusRotationOffset.y += deltaPitch; // pitch (vertical)
+        focusRotationOffset.x += deltaYaw;
+        focusRotationOffset.y += deltaPitch;
 
-        // clamp yaw and pitch separately
         focusRotationOffset.x = Mathf.Clamp(focusRotationOffset.x, -maxYaw, maxYaw);
         focusRotationOffset.y = Mathf.Clamp(focusRotationOffset.y, -maxPitch, maxPitch);
 
-        // construct rotation: start * yaw * pitch
         Quaternion yawRot = Quaternion.AngleAxis(focusRotationOffset.x, Vector3.up);
         Quaternion pitchRot = Quaternion.AngleAxis(focusRotationOffset.y, Vector3.right);
 
         heldItem.transform.rotation = focusStartRotation * yawRot * pitchRot;
     }
 
-    // ------------------------------------------------------------------
-    // 6) Pickup / Drop helpers
-    // ------------------------------------------------------------------
+    // --------------------------
+    // Pickup & Drop helpers
+    // - when picking up we set layer to HeldItem so it doesn't block raycasts
+    // - when dropping or placing, the layer is restored so OutlineController can work
+    // --------------------------
     public void PickUpItem(PickupInteractable item)
     {
+        if (item == null) return;
+
         heldItem = item;
         heldItem.SetHeld(true);
 
@@ -288,12 +406,17 @@ public class PlayerInteraction : MonoBehaviour
             rb.isKinematic = true;
         }
 
-        // keep item unparented (we lerp it toward holdPoint)
+        // set held layer if it exists so the item won't block raycasts
+        if (heldItemLayerIndex >= 0)
+            item.gameObject.layer = heldItemLayerIndex;
+
+        // unparent; we will lerp toward holdPoint
         item.transform.SetParent(null);
         ShowPrompt("Press [E] to Drop");
 
-        // reset pickup blend to animate the pickup transition
+        // reset smoothing blends
         pickupBlend = 0f;
+        previewBlend = 0f;
     }
 
     public void DropItem()
@@ -307,27 +430,34 @@ public class PlayerInteraction : MonoBehaviour
             rb.isKinematic = false;
         }
 
+        // restore layer so outline works (Default or your Outline default)
+        int defaultLayer = 3;
+        if (LayerMask.LayerToName(3) != "") defaultLayer = 3;
+        heldItem.gameObject.layer = defaultLayer;
+
         heldItem.SetHeld(false);
         heldItem = null;
-
-        // ensure we exit focus mode if dropping while inspecting
         ExitFocusMode();
     }
 
-    // small helpers used by other systems (LoopTeleport)
-    public bool HeldItemExists()
+    // Cancel preview and bring held item back to hand
+    private void CancelPreview()
     {
-        return heldItem != null;
+        isPreviewing = false;
+        previewSlot = null;
+        previewBlend = 0f;
+        // re-enable rotation if we were blocking it (handled in RotateHeldItem)
     }
 
-    public Transform GetHeldItemTransform()
-    {
-        return heldItem != null ? heldItem.transform : null;
-    }
+    // --------------------------
+    // helpers for other systems
+    // --------------------------
+    public bool HeldItemExists() => heldItem != null;
+    public Transform GetHeldItemTransform() => heldItem != null ? heldItem.transform : null;
 
-    // ------------------------------------------------------------------
-    // 7) UI prompt helpers
-    // ------------------------------------------------------------------
+    // --------------------------
+    // UI prompt helpers
+    // --------------------------
     private void ShowPrompt(string text)
     {
         if (uiPrompt == null) return;
