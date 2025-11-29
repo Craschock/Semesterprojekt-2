@@ -14,6 +14,14 @@ public class PlaceSlot : MonoBehaviour, IInteractable
 
     [Header("Settings")]
     public bool allowPreviewRotation = true; // if false, preview doesn't accept rotation
+    public ItemType requiredType = ItemType.None;
+
+    // Helper — easy to check if slot is correct
+    public bool HasCorrectItem()
+    {
+        return placedItem != null && placedItem.itemType == requiredType;
+    }
+
 
     // current placed item (null = slot empty)
     private PickupInteractable placedItem;

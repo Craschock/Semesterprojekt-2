@@ -8,11 +8,11 @@ public class PickupInteractable : MonoBehaviour, IInteractable
     public bool IsHeld { get; private set; } = false;
     public bool IsSlotted { get; private set; } = false; // true when placed in PlaceSlot
 
-    private OutlineController outlineController;
+    public OutlineController outlineController;
+    public ItemType itemType = ItemType.None;
 
     private void Awake()
     {
-        outlineController = GetComponent<OutlineController>();
     }
 
     // called when player looks at this item (in world or in slot)
