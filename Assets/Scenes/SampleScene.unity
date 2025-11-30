@@ -283,7 +283,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 103456904}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a6c2bf6210e78c94aa3bcb1590712951, type: 3}
   m_Name: 
@@ -434,7 +434,6 @@ GameObject:
   - component: {fileID: 268363178}
   - component: {fileID: 268363181}
   - component: {fileID: 268363180}
-  - component: {fileID: 268363179}
   - component: {fileID: 268363183}
   - component: {fileID: 268363182}
   m_Layer: 10
@@ -460,19 +459,6 @@ Transform:
   - {fileID: 1630245876}
   m_Father: {fileID: 404910668}
   m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
---- !u!114 &268363179
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 268363177}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a6c2bf6210e78c94aa3bcb1590712951, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::OutlineController
-  proximityDistance: 5
 --- !u!114 &268363180
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -934,7 +920,7 @@ Transform:
   m_GameObject: {fileID: 389035507}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 3}
+  m_LocalPosition: {x: 0, y: 0, z: 2}
   m_LocalScale: {x: 1, y: 0.5, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1234,7 +1220,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 501126452}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a6c2bf6210e78c94aa3bcb1590712951, type: 3}
   m_Name: 
@@ -1432,7 +1418,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d94645e3b7efd34591b9714805184ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupInteractable
-  outlineController: {fileID: 523400680}
   itemType: 0
 --- !u!54 &523400682
 Rigidbody:
@@ -1746,7 +1731,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d94645e3b7efd34591b9714805184ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupInteractable
-  outlineController: {fileID: 1665292919}
   itemType: 1
 --- !u!65 &653129198
 BoxCollider:
@@ -1941,7 +1925,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d94645e3b7efd34591b9714805184ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupInteractable
-  outlineController: {fileID: 1976329513}
   itemType: 3
 --- !u!65 &669619347
 BoxCollider:
@@ -2216,7 +2199,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d94645e3b7efd34591b9714805184ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupInteractable
-  outlineController: {fileID: 1133414291}
   itemType: 3
 --- !u!65 &854522453
 BoxCollider:
@@ -2774,7 +2756,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d94645e3b7efd34591b9714805184ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupInteractable
-  outlineController: {fileID: 2070229575}
   itemType: 2
 --- !u!65 &1178884348
 BoxCollider:
@@ -4005,7 +3986,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1729703945}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a6c2bf6210e78c94aa3bcb1590712951, type: 3}
   m_Name: 
@@ -4439,7 +4420,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d94645e3b7efd34591b9714805184ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupInteractable
-  outlineController: {fileID: 1080458539}
   itemType: 3
 --- !u!65 &1963901872
 BoxCollider:
@@ -4809,7 +4789,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2060437942}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a6c2bf6210e78c94aa3bcb1590712951, type: 3}
   m_Name: 

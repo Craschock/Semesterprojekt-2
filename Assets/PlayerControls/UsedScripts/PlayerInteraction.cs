@@ -138,6 +138,16 @@ public class PlayerInteraction : MonoBehaviour
                 // If player is holding an item -> preview placement
                 if (heldItem != null)
                 {
+                    // If slot is full -> no preview allowed
+                    if (slot.HasItem())
+                    {
+                        // cannot place here
+                        if (isPreviewing) CancelPreview();
+
+                        ShowPrompt("Slot is full");
+                        return;
+                    }
+
                     // start preview if new
                     if (previewSlot != slot)
                     {
@@ -149,6 +159,7 @@ public class PlayerInteraction : MonoBehaviour
                     }
 
                     ShowPrompt("Press [E] to Place Item");
+                    
                 }
                 else
                 {
@@ -203,8 +214,19 @@ public class PlayerInteraction : MonoBehaviour
             // nothing hit
             currentInteractable?.OnLoseFocus();
             currentInteractable = null;
-            if (isPreviewing) CancelPreview();
-            HidePrompt();
+
+            if (isPreviewing)
+                CancelPreview();
+
+            // When holding an item, show drop prompt
+            if (heldItem != null)
+            {
+                ShowPrompt("Press [E] to Drop");
+            }
+            else
+            {
+                HidePrompt();
+            }
         }
     }
 
@@ -275,6 +297,13 @@ public class PlayerInteraction : MonoBehaviour
         // CASE: placing into preview slot
         if (isPreviewing && previewSlot != null && heldItem != null)
         {
+            // SAFETY CHECK: never place into full slot (kinda repetitive)
+            if (previewSlot.HasItem())
+            {
+                CancelPreview();
+                return;
+            }
+
             previewSlot.PlaceItem(heldItem);
             // placed -> clear held reference
             heldItem = null;
@@ -406,10 +435,6 @@ public class PlayerInteraction : MonoBehaviour
             rb.isKinematic = true;
         }
 
-        // set held layer if it exists so the item won't block raycasts
-        if (heldItemLayerIndex >= 0)
-            item.gameObject.layer = heldItemLayerIndex;
-
         // unparent; we will lerp toward holdPoint
         item.transform.SetParent(null);
         ShowPrompt("Press [E] to Drop");
@@ -429,11 +454,6 @@ public class PlayerInteraction : MonoBehaviour
             rb.useGravity = true;
             rb.isKinematic = false;
         }
-
-        // restore layer so outline works (Default or your Outline default)
-        int defaultLayer = 3;
-        if (LayerMask.LayerToName(3) != "") defaultLayer = 3;
-        heldItem.gameObject.layer = defaultLayer;
 
         heldItem.SetHeld(false);
         heldItem = null;

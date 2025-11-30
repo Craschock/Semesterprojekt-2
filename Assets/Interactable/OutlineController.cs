@@ -2,19 +2,22 @@ using UnityEngine;
 
 /// <summary>
 /// Controls which layer the object uses so the "Free Outline" asset can render
-/// proximity vs highlight outlines. Layers are switched at runtime.
-/// This version avoids changing the layer if the object is currently 'held'.
+/// proximity vs highlight outlines. Layers are switched on the whole root object.
+/// This version:
+/// - applies layer changes recursively to root + all children
+/// - checks pickup state via parent (GetComponentInParent)
+/// - exposes public setters for Held/Default/Proximity/Highlight states
 /// </summary>
 public class OutlineController : MonoBehaviour
 {
     [Header("Settings")]
     public float proximityDistance = 5f; // distance to player to enable proximity outline
 
-    // layer indices
-    private int defaultLayer = 6;
-    private int proximityLayer = 7;
-    private int highlightLayer = 8;
-    private int heldItemLayerIndex = 9;
+    // layer indices (populated in Start)
+    private int defaultLayer = -1;
+    private int proximityLayer = -1;
+    private int highlightLayer = -1;
+    private int heldItemLayerIndex = -1;
 
     private Transform player;
     private bool isHighlighted = false;
@@ -23,62 +26,90 @@ public class OutlineController : MonoBehaviour
     private void Start()
     {
         player = Camera.main.transform;
-        gameObject.layer = defaultLayer;
 
-        //Init layers
+        // initialize layer indices by name
         defaultLayer = LayerMask.NameToLayer("Item");
         proximityLayer = LayerMask.NameToLayer("OutlineProximity");
         highlightLayer = LayerMask.NameToLayer("OutlineHighlight");
         heldItemLayerIndex = LayerMask.NameToLayer("HeldItem");
+
+        // ensure the whole root starts on the default layer
+        SetLayerRecursive(defaultLayer);
     }
 
     private void Update()
     {
-        // If this object is a pickup and currently held, do NOT change its layer
-        var pickup = GetComponent<PickupInteractable>();
-        if (pickup != null && pickup.IsHeld)
-            return;
+        // check if the item is held by looking up the hierarchy
+        var pickupParent = GetComponentInParent<PickupInteractable>();
+        if (pickupParent != null && pickupParent.IsHeld)
+            return; // if held, do nothing here (layer controlled elsewhere)
 
-        // Also skip if the object is on the HeldItem layer (safety)
-        if (heldItemLayerIndex >= 0 && gameObject.layer == heldItemLayerIndex)
-            return;
+        // also skip if the root already sits on HeldItem layer
+        if (heldItemLayerIndex >= 0)
+        {
+            Transform root = transform.root;
+            if (root != null && root.gameObject.layer == heldItemLayerIndex)
+                return;
+        }
 
-        // compute distance to player and set layer accordingly (unless highlighted)
-        float dist = Vector3.Distance(player.position, transform.position);
+        // compute distance from player to root position
+        float dist = Vector3.Distance(player.position, transform.root.position);
 
         if (dist <= proximityDistance && !isHighlighted)
         {
-            SetLayer(proximityLayer);
+            // set proximity layer on the whole object
+            SetLayerRecursive(proximityLayer);
             isInProximity = true;
         }
         else if (!isHighlighted)
         {
-            SetLayer(defaultLayer);
+            SetLayerRecursive(defaultLayer);
             isInProximity = false;
         }
     }
 
-    public void SetHighlight()
+    // Public helpers for other scripts to force specific outline states
+    public void SetToHighlight()
     {
         isHighlighted = true;
-        SetLayer(highlightLayer);
+        SetLayerRecursive(highlightLayer);
     }
 
-    public void SetProximityOrNone()
+    public void SetToProximityOrDefault()
     {
         isHighlighted = false;
-        SetLayer(isInProximity ? proximityLayer : defaultLayer);
+        SetLayerRecursive(isInProximity ? proximityLayer : defaultLayer);
     }
 
-    public void DisableOutline()
+    public void SetToDefault()
     {
         isHighlighted = false;
         isInProximity = false;
-        SetLayer(defaultLayer);
+        SetLayerRecursive(defaultLayer);
     }
 
-    private void SetLayer(int layer)
+    public void SetToHeld()
     {
-        gameObject.layer = layer;
+        isHighlighted = false;
+        // When held we don't want outline layers interfering; set the root + children to HeldItem
+        SetLayerRecursive(heldItemLayerIndex);
+    }
+
+    // Private: apply a layer to the root and all children (recursive)
+    private void SetLayerRecursive(int layer)
+    {
+        if (layer < 0) return;
+
+        // apply to root object
+        Transform root = transform.root;
+        if (root == null)
+            root = transform; // fallback
+
+        // set layer on root and all children (including the child with this component)
+        var all = root.GetComponentsInChildren<Transform>(true);
+        for (int i = 0; i < all.Length; i++)
+        {
+            all[i].gameObject.layer = layer;
+        }
     }
 }

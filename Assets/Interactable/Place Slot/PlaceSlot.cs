@@ -44,16 +44,25 @@ public class PlaceSlot : MonoBehaviour, IInteractable
     // when player looks at the slot
     public void OnFocus()
     {
-        // highlight the slot itself (not the placed item)
-        if (outline != null)
-            outline.SetHighlight();
+        // If the slot has an item, highlight the item too
+        if (placedItem != null)
+        {
+            var itemOutline = placedItem.GetComponentInChildren<OutlineController>();
+            if (itemOutline != null)
+                itemOutline.SetToHighlight();
+        }
     }
 
     // when player looks away
     public void OnLoseFocus()
     {
-        if (outline != null)
-            outline.SetProximityOrNone();
+        // Reset outline on the placed item
+        if (placedItem != null)
+        {
+            var itemOutline = placedItem.GetComponentInChildren<OutlineController>();
+            if (itemOutline != null)
+                itemOutline.SetToProximityOrDefault();
+        }
     }
 
     // --- Slot API used by PlayerInteraction ---
