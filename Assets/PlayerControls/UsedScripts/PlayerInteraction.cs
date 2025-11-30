@@ -43,6 +43,7 @@ public class PlayerInteraction : MonoBehaviour
     private float focusReturnBlend = 1f;
     private float pickupBlend = 0f;
     private float previewBlend = 0f;
+    private float previewExitBlend = 0f;
 
     // runtime
     private Camera cam;
@@ -271,6 +272,27 @@ public class PlayerInteraction : MonoBehaviour
             targetPos = hit.point - direction.normalized * 0.1f;
         }
 
+        // If exiting preview, smoothly blend back from the preview state
+        if (previewExitBlend > 0f)
+        {
+            previewExitBlend = Mathf.Clamp01(previewExitBlend - Time.deltaTime * 4f);
+
+            item.position = Vector3.Lerp(
+                item.position,
+                targetPos,
+                Time.deltaTime * holdSmoothing * (pickupBlend * (1f - previewExitBlend))
+            );
+
+            // also smooth rotation
+            item.rotation = Quaternion.Slerp(
+                item.rotation,
+                targetRot,
+                Time.deltaTime * holdSmoothing * (1f - previewExitBlend)
+            );
+
+            return;
+        }
+
         item.position = Vector3.Lerp(item.position, targetPos, Time.deltaTime * holdSmoothing * pickupBlend);
 
         // rotation only reset when NOT in focus mode and NOT previewing
@@ -463,10 +485,14 @@ public class PlayerInteraction : MonoBehaviour
     // Cancel preview and bring held item back to hand
     private void CancelPreview()
     {
+        if (!isPreviewing) return;
+
         isPreviewing = false;
+
+        // Start smoothing the transition back to holdPoint
+        previewExitBlend = 1f;
+
         previewSlot = null;
-        previewBlend = 0f;
-        // re-enable rotation if we were blocking it (handled in RotateHeldItem)
     }
 
     // --------------------------

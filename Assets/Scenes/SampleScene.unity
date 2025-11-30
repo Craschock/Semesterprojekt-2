@@ -848,7 +848,7 @@ MonoBehaviour:
   pickupSmoothing: 1
   holdSmoothing: 25
   rotationSpeed: 80
-  previewSmoothing: 8
+  previewSmoothing: 1
   raycastMask:
     serializedVersion: 2
     m_Bits: 0
