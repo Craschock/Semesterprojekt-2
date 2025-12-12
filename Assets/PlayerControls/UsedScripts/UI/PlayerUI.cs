@@ -10,12 +10,26 @@ public class PlayerUI : MonoBehaviour
 
     public PlayerMovement player; // Link player here
 
+    // Trackers to prevent string garbage creation
+    private int lastStamina = -1;
+
     private void Update()
     {
-        lebenText.text = "Leben: 100"; // Placeholder
-        furchtText.text = "Furcht: 0"; // Placeholder
-        reinheitText.text = "Reinheit: 100"; // Placeholder
+        // Placeholder text (assumed static for now)
+        lebenText.text = "Leben: 100";
+        furchtText.text = "Furcht: 0";
+        reinheitText.text = "Reinheit: 100";
 
-        staminaText.text = "Stamina: " + Mathf.Round(player.stamina);
+        // ------------------------------------------------------
+        // GARBAGE COLLECTION OPTIMIZATION
+        // Only update text if the integer value has changed
+        // ------------------------------------------------------
+        int currentStamina = Mathf.RoundToInt(player.stamina);
+
+        if (currentStamina != lastStamina)
+        {
+            staminaText.text = "Stamina: " + currentStamina.ToString();
+            lastStamina = currentStamina;
+        }
     }
 }

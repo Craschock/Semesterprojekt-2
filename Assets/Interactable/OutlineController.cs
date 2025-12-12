@@ -8,67 +8,90 @@ using UnityEngine;
 /// - checks pickup state via parent (GetComponentInParent)
 /// - exposes public setters for Held/Default/Proximity/Highlight states
 /// </summary>
+using UnityEngine;
+
 public class OutlineController : MonoBehaviour
 {
     [Header("Settings")]
-    public float proximityDistance = 5f; // distance to player to enable proximity outline
+    public float proximityRadius = 5f; // Desired WORLD SPACE radius
 
-    // layer indices (populated in Start)
+    // layer indices
     private int defaultLayer = -1;
     private int proximityLayer = -1;
     private int highlightLayer = -1;
     private int heldItemLayerIndex = -1;
+    private int ignoreRaycastLayer = -1;
 
-    private Transform player;
+    // cache
+    private PickupInteractable cachedPickup;
     private bool isHighlighted = false;
     private bool isInProximity = false;
+    private SphereCollider proximityCollider;
 
     private void Start()
     {
-        player = Camera.main.transform;
-
-        // initialize layer indices by name
+        // 1. Initialize Layers
         defaultLayer = LayerMask.NameToLayer("Item");
         proximityLayer = LayerMask.NameToLayer("OutlineProximity");
         highlightLayer = LayerMask.NameToLayer("OutlineHighlight");
         heldItemLayerIndex = LayerMask.NameToLayer("HeldItem");
+        ignoreRaycastLayer = LayerMask.NameToLayer("Ignore Raycast");
 
-        // ensure the whole root starts on the default layer
+        // 2. Cache References (Look on THIS object, the Parent)
+        cachedPickup = GetComponent<PickupInteractable>();
+
+        // FIND COLLIDER: Look in children for the Sensor (Sphere Trigger)
+        var allColliders = GetComponentsInChildren<SphereCollider>(true);
+        foreach (var col in allColliders)
+        {
+            if (col.isTrigger)
+            {
+                proximityCollider = col;
+                break;
+            }
+        }
+
+        // 3. AUTO-FIX RADIUS
+        if (proximityCollider != null)
+        {
+            Transform t = proximityCollider.transform;
+            float maxScale = Mathf.Max(t.lossyScale.x, t.lossyScale.y, t.lossyScale.z);
+            if (maxScale > 0) proximityCollider.radius = proximityRadius / maxScale;
+        }
+
+        // 4. Set Initial Layers
         SetLayerRecursive(defaultLayer);
     }
 
-    private void Update()
+    // ------------------------------------------------------
+    // TRIGGER LOGIC
+    // ------------------------------------------------------
+    private void OnTriggerEnter(Collider other)
     {
-        // check if the item is held by looking up the hierarchy
-        var pickupParent = GetComponentInParent<PickupInteractable>();
-        if (pickupParent != null && pickupParent.IsHeld)
-            return; // if held, do nothing here (layer controlled elsewhere)
-
-        // also skip if the root already sits on HeldItem layer
-        if (heldItemLayerIndex >= 0)
+        if (other.CompareTag("Player"))
         {
-            Transform root = transform.root;
-            if (root != null && root.gameObject.layer == heldItemLayerIndex)
-                return;
-        }
+            // If held, ignore proximity logic completely
+            if (cachedPickup != null && cachedPickup.IsHeld) return;
 
-        // compute distance from player to root position
-        float dist = Vector3.Distance(player.position, transform.root.position);
-
-        if (dist <= proximityDistance && !isHighlighted)
-        {
-            // set proximity layer on the whole object
-            SetLayerRecursive(proximityLayer);
             isInProximity = true;
-        }
-        else if (!isHighlighted)
-        {
-            SetLayerRecursive(defaultLayer);
-            isInProximity = false;
+            if (!isHighlighted) SetLayerRecursive(proximityLayer);
         }
     }
 
-    // Public helpers for other scripts to force specific outline states
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            if (cachedPickup != null && cachedPickup.IsHeld) return;
+
+            isInProximity = false;
+            if (!isHighlighted) SetLayerRecursive(defaultLayer);
+        }
+    }
+
+    // ------------------------------------------------------
+    // PUBLIC METHODS
+    // ------------------------------------------------------
     public void SetToHighlight()
     {
         isHighlighted = true;
@@ -81,35 +104,35 @@ public class OutlineController : MonoBehaviour
         SetLayerRecursive(isInProximity ? proximityLayer : defaultLayer);
     }
 
-    public void SetToDefault()
-    {
-        isHighlighted = false;
-        isInProximity = false;
-        SetLayerRecursive(defaultLayer);
-    }
-
     public void SetToHeld()
     {
         isHighlighted = false;
-        // When held we don't want outline layers interfering; set the root + children to HeldItem
         SetLayerRecursive(heldItemLayerIndex);
     }
 
-    // Private: apply a layer to the root and all children (recursive)
+    public void SetToDefault()
+    {
+        isHighlighted = false;
+        SetLayerRecursive(isInProximity ? proximityLayer : defaultLayer);
+    }
+
+    // ------------------------------------------------------
+    // HELPER
+    // ------------------------------------------------------
     private void SetLayerRecursive(int layer)
     {
         if (layer < 0) return;
 
-        // apply to root object
-        Transform root = transform.root;
-        if (root == null)
-            root = transform; // fallback
+        // Apply to Parent (unless it's the sensor layer)
+        if (gameObject.layer != ignoreRaycastLayer)
+            gameObject.layer = layer;
 
-        // set layer on root and all children (including the child with this component)
-        var all = root.GetComponentsInChildren<Transform>(true);
-        for (int i = 0; i < all.Length; i++)
+        // Apply to Children
+        foreach (Transform child in transform)
         {
-            all[i].gameObject.layer = layer;
+            // Safety: Never overwrite the Sensor's layer
+            if (child.gameObject.layer == ignoreRaycastLayer) continue;
+            child.gameObject.layer = layer;
         }
     }
 }

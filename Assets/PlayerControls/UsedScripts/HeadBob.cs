@@ -9,7 +9,8 @@ public class HeadBob : MonoBehaviour
 {
     [Header("Walk Bob Settings")]
     public float bobSpeed = 14f;        // base bob frequency while walking
-    public float bobAmount = 0.05f;     // base bob amplitude while walking
+    public float bobAmountX = 0.05f;    // horizontal sway amount (Figure-8 width)
+    public float bobAmountY = 0.05f;    // vertical bob amount (Figure-8 height)
 
     [Header("Sprint Bob Settings")]
     public float sprintBobSpeedMultiplier = 1.6f;   // frequency multiplier when sprinting
@@ -21,12 +22,14 @@ public class HeadBob : MonoBehaviour
 
     // runtime
     private float defaultYPos;   // starting Y position (local)
+    private float defaultXPos;   // starting X position (local)
     private float timer = 0f;    // bob animation timer
 
     private void Start()
     {
-        // store initial camera height
+        // store initial camera coordinates
         defaultYPos = transform.localPosition.y;
+        defaultXPos = transform.localPosition.x;
     }
 
     private void Update()
@@ -39,9 +42,10 @@ public class HeadBob : MonoBehaviour
         if ((playerInteraction != null && playerInteraction.hintUI.IsHintOpen) ||
             (playerInteraction != null && playerInteraction.IsInFocusMode()))
         {
-            // smoothly return to resting height while disabled
+            // smoothly return to resting position while disabled
             Vector3 pos = transform.localPosition;
             pos.y = Mathf.Lerp(pos.y, defaultYPos, Time.deltaTime * 5f);
+            pos.x = Mathf.Lerp(pos.x, defaultXPos, Time.deltaTime * 5f);
             transform.localPosition = pos;
 
             timer = 0f;
@@ -51,33 +55,39 @@ public class HeadBob : MonoBehaviour
         Vector3 localPos = transform.localPosition;
 
         // ------------------------------------------------------
-        // WALKING / SPRINTING BOB
+        // WALKING / SPRINTING BOB (FIGURE-8)
         // ------------------------------------------------------
         if (playerMovement != null && playerMovement.IsMoving())
         {
             float speed = bobSpeed;
-            float amount = bobAmount;
+            float amountX = bobAmountX;
+            float amountY = bobAmountY;
 
             // apply sprint multipliers
             if (playerMovement.IsRunning())
             {
                 speed *= sprintBobSpeedMultiplier;
-                amount *= sprintBobAmountMultiplier;
+                amountX *= sprintBobAmountMultiplier;
+                amountY *= sprintBobAmountMultiplier;
             }
 
             // advance animation
             timer += Time.deltaTime * speed;
 
-            // apply sine-wave bob motion
-            localPos.y = defaultYPos + Mathf.Sin(timer) * amount;
+            // apply Figure-8 motion
+            // Y moves at normal speed (Up/Down)
+            // X moves at half speed (Left... Right...)
+            localPos.y = defaultYPos + Mathf.Sin(timer) * amountY;
+            localPos.x = defaultXPos + Mathf.Cos(timer / 2f) * amountX;
         }
         else
         {
             // --------------------------------------------------
-            // NOT MOVING = smoothly return to default height
+            // NOT MOVING = smoothly return to default position
             // --------------------------------------------------
             timer = 0f;
             localPos.y = Mathf.Lerp(localPos.y, defaultYPos, Time.deltaTime * 5f);
+            localPos.x = Mathf.Lerp(localPos.x, defaultXPos, Time.deltaTime * 5f);
         }
 
         transform.localPosition = localPos;

@@ -49,7 +49,6 @@ public class PlayerInteraction : MonoBehaviour
     // runtime
     private Camera cam;
     private PlayerControls input;
-    private InputAction interactAction;
     private InputAction focusAction;
     private InputAction rotateXAction;
     private InputAction rotateYAction;
@@ -60,7 +59,6 @@ public class PlayerInteraction : MonoBehaviour
     private bool isPreviewing = false;
 
     private bool inFocusMode = false;
-    private bool interactPressedThisFrame = false;
 
     // layer name for held items (create this in Unity)
     private readonly string heldItemLayerName = "HeldItem";
@@ -71,12 +69,16 @@ public class PlayerInteraction : MonoBehaviour
         cam = Camera.main;
         input = new PlayerControls();
 
-        interactAction = input.Player.Interact;
+        // ------------------------------------------------------
+        // INPUT HANDLING: EVENT REGISTRATION
+        // ------------------------------------------------------
+        // Instead of checking in Update, we subscribe to the event here.
+        input.Player.Interact.performed += OnInteractPerformed;
+
         focusAction = input.Player.Focus;
         rotateXAction = input.Player.RotateX;
         rotateYAction = input.Player.RotateY;
 
-        interactAction.Enable();
         focusAction.Enable();
         rotateXAction.Enable();
         rotateYAction.Enable();
@@ -84,6 +86,10 @@ public class PlayerInteraction : MonoBehaviour
         // compute held layer index (user must create this layer in editor)
         heldItemLayerIndex = LayerMask.NameToLayer(heldItemLayerName);
     }
+
+    // Don't forget to Enable/Disable
+    private void OnEnable() => input.Player.Interact.Enable();
+    private void OnDisable() => input.Player.Interact.Disable();
 
     private void Start()
     {
@@ -104,21 +110,78 @@ public class PlayerInteraction : MonoBehaviour
 
     private void Update()
     {
-        interactPressedThisFrame = interactAction.WasPerformedThisFrame();
-
-        // If a hint is currently open (option B), only allow closing it with E.
+        // If a hint is currently open, only allow closing it with E.
+        // We handle the actual closing in OnInteractPerformed, but we show the prompt here.
         if (hintUI != null && hintUI.IsHintOpen)
         {
-            if (interactPressedThisFrame)
-                hintUI.HideHint();
             ShowPrompt("Press [E] to Stop Reading");
-            return; // block all other interaction while hint is open
+            return;
         }
 
         HandleRaycast();           // handles both items and slots (and now hints too)
         HandleHeldObject();        // move held item toward holdPoint or previewPoint
         HandleFocusModeToggle();   // toggle focus and handle rotation
-        HandleHeldInteract();      // drop / place / take depending on context
+    }
+
+    // ------------------------------------------------------
+    // EVENT-BASED INTERACTION LOGIC (Ist effizienter)
+    // This only runs when [E] is actually pressed.
+    // ------------------------------------------------------
+    private void OnInteractPerformed(InputAction.CallbackContext ctx)
+    {
+        // 1. Priority: Close Hint
+        if (hintUI != null && hintUI.IsHintOpen)
+        {
+            hintUI.HideHint();
+            return;
+        }
+
+        // 2. CASE: Place into slot (while previewing)
+        if (isPreviewing && previewSlot != null && heldItem != null)
+        {
+            if (!previewSlot.HasItem())
+            {
+                previewSlot.PlaceItem(heldItem);
+                heldItem = null;
+                isPreviewing = false;
+                previewSlot = null;
+                HidePrompt();
+            }
+            return;
+        }
+
+        // 3. CASE: Take item from slot
+        PlaceSlot slot = currentInteractable as PlaceSlot;
+        if (slot != null && heldItem == null && slot.HasItem())
+        {
+            PickupInteractable item = slot.RemoveItem();
+            if (item != null)
+                PickUpItem(item);
+            return;
+        }
+
+        // 4. CASE: Pickup world item
+        PickupInteractable pickup = currentInteractable as PickupInteractable;
+        if (pickup != null && heldItem == null && !pickup.IsSlotted)
+        {
+            pickup.OnInteract(this);
+            return;
+        }
+
+        // 5. CASE: Read Hint 
+        HintInteractable hint = currentInteractable as HintInteractable;
+        if (hint != null && heldItem == null)
+        {
+            hint.OnInteract(this);
+            return;
+        }
+
+        // 6. CASE: Drop held item
+        if (heldItem != null)
+        {
+            DropItem();
+            return;
+        }
     }
 
     // --------------------------
@@ -328,72 +391,6 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     // --------------------------
-    // Drop / Place / Take logic depending on context
-    // - if previewing & interact pressed -> place into slot
-    // - if looking at a slot with item & not holding -> take item
-    // - if looking at pickup and not holding -> pick up
-    // - if holding and looking at nothing -> drop
-    // --------------------------
-    private void HandleHeldInteract()
-    {
-        if (!interactPressedThisFrame) return;
-
-        // CASE: Place into slot
-        if (isPreviewing && previewSlot != null && heldItem != null)
-        {
-            if (!previewSlot.HasItem())
-            {
-                previewSlot.PlaceItem(heldItem);
-                heldItem = null;
-                isPreviewing = false;
-                previewSlot = null;
-                HidePrompt();
-            }
-            interactPressedThisFrame = false;
-            return;
-        }
-
-        // CASE: Take item from slot
-        PlaceSlot slot = currentInteractable as PlaceSlot;
-        if (slot != null && heldItem == null && slot.HasItem())
-        {
-            PickupInteractable item = slot.RemoveItem();
-            if (item != null)
-                PickUpItem(item);
-
-            interactPressedThisFrame = false;
-            return;
-        }
-
-        // CASE: Pickup world item
-        PickupInteractable pickup = currentInteractable as PickupInteractable;
-        if (pickup != null && heldItem == null && !pickup.IsSlotted)
-        {
-            pickup.OnInteract(this);
-            interactPressedThisFrame = false;
-            return;
-        }
-
-        // CASE: Read Hint 
-        HintInteractable hint = currentInteractable as HintInteractable;
-        if (hint != null && heldItem == null)
-        {
-            hint.OnInteract(this);
-            interactPressedThisFrame = false;
-            return;
-        }
-
-        // CASE: Drop held item
-        if (heldItem != null)
-        {
-            DropItem();
-            interactPressedThisFrame = false;
-            return;
-        }
-    }
-
-
-    // --------------------------
     // Focus / Inspect mode toggling
     // - rotation is disabled while previewing (by early return)
     // --------------------------
@@ -445,6 +442,7 @@ public class PlayerInteraction : MonoBehaviour
     {
         if (isPreviewing) return; // block rotation during preview
 
+        //Also bro wer auch immer das liest dieses smoothing macht mich fr crazy
         float rotX = rotateXAction.ReadValue<float>();
         float rotY = rotateYAction.ReadValue<float>();
 

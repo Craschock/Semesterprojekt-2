@@ -20,7 +20,7 @@ public class PickupInteractable : MonoBehaviour, IInteractable
     private void Awake()
     {
         // find outline controller in children (the mesh)
-        outlineController = GetComponentInChildren<OutlineController>(true);
+        outlineController = GetComponent<OutlineController>();
     }
 
     // called when player looks at this item (in world or in slot)
