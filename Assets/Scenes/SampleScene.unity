@@ -367,7 +367,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 5
+  m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &240836889
 GameObject:
@@ -551,7 +551,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 268363177}
-  m_Enabled: 0
+  m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -810,7 +810,7 @@ GameObject:
   - component: {fileID: 330585548}
   - component: {fileID: 330585549}
   - component: {fileID: 330585550}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Main Camera
   m_TagString: MainCamera
   m_Icon: {fileID: 0}
@@ -885,8 +885,8 @@ Transform:
   m_GameObject: {fileID: 330585543}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.6000004, z: 0}
-  m_LocalScale: {x: 1, y: 0.6666667, z: 1}
+  m_LocalPosition: {x: 0, y: 0.6, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 389035508}
@@ -963,11 +963,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6bc9da4a0eea83b43af15c3b66e1ae6b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HeadBob
+  standCameraY: 1.6
+  crouchCameraY: 0.9
+  heightChangeSpeed: 8
   bobSpeed: 14
   bobAmountX: 0.05
   bobAmountY: 0.05
   sprintBobSpeedMultiplier: 1.2
   sprintBobAmountMultiplier: 1.8
+  crouchBobSpeedMultiplier: 0.6
+  crouchBobAmountMultiplier: 0.5
   playerMovement: {fileID: 1592984634}
   playerInteraction: {fileID: 330585550}
 --- !u!114 &330585550
@@ -990,16 +995,16 @@ MonoBehaviour:
   previewSmoothing: 1
   raycastMask:
     serializedVersion: 2
-    m_Bits: 1408
+    m_Bits: 1409
   focusRotationMultiplier: 1.5
   maxYaw: 135
   maxPitch: 45
   focusReturnSmoothing: 1
   maxHoldDistance: 3
-  wallCheckRadius: 0.3
-  environmentMask:
+  throwForceMultiplier: 0.5
+  collisionMask:
     serializedVersion: 2
-    m_Bits: 1
+    m_Bits: 65
   playerMovement: {fileID: 1592984634}
   playerLook: {fileID: 330585548}
   uiPrompt: {fileID: 1615181280}
@@ -1061,7 +1066,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 2}
-  m_LocalScale: {x: 1, y: 0.5, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 330585546}
@@ -1276,6 +1281,59 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!1 &452767634
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 452767635}
+  - component: {fileID: 452767636}
+  m_Layer: 2
+  m_Name: ProximitySensor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &452767635
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 452767634}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 751928469}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!135 &452767636
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 452767634}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 0.5
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &501126452
 GameObject:
   m_ObjectHideFlags: 0
@@ -1470,7 +1528,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 5
+  m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &523400674
 GameObject:
@@ -1992,7 +2050,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 5
+  m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &651046078 stripped
 GameObject:
@@ -2483,6 +2541,7 @@ GameObject:
   - component: {fileID: 751928468}
   - component: {fileID: 751928470}
   - component: {fileID: 751928471}
+  - component: {fileID: 751928472}
   m_Layer: 6
   m_Name: TestHint
   m_TagString: Untagged
@@ -2525,6 +2584,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 283395730}
+  - {fileID: 452767635}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &751928470
@@ -2553,6 +2613,33 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OutlineController
   proximityRadius: 5
+--- !u!54 &751928472
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 751928466}
+  serializedVersion: 5
+  m_Mass: 1
+  m_LinearDamping: 0
+  m_AngularDamping: 0
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 0
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &829211788
 GameObject:
   m_ObjectHideFlags: 0
@@ -2731,7 +2818,7 @@ Rigidbody:
     m_Bits: 0
   m_ImplicitCom: 1
   m_ImplicitTensor: 1
-  m_UseGravity: 1
+  m_UseGravity: 0
   m_IsKinematic: 0
   m_Interpolate: 0
   m_Constraints: 0
@@ -3635,8 +3722,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1276509711}
-  m_Layer: 0
-  m_Name: PlayerCharacter
+  m_Layer: 3
+  m_Name: Player
   m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3947,7 +4034,7 @@ GameObject:
   - component: {fileID: 1592984632}
   - component: {fileID: 1592984635}
   - component: {fileID: 1592984634}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: PlayerMesh
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -3964,7 +4051,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1.5, z: 1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 330585546}
@@ -3977,7 +4064,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1592984629}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -4044,6 +4131,10 @@ MonoBehaviour:
   fovChangeSpeed: 3
   walkSpeed: 4
   sprintSpeed: 9
+  crouchSpeed: 2.5
+  standHeight: 2
+  crouchHeight: 1
+  crouchTransitionSpeed: 10
   stamina: 100
   maxStamina: 100
   staminaDrain: 20
@@ -4816,7 +4907,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 5
+  m_Radius: 0.5
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &1963901869
 GameObject:
@@ -4976,6 +5067,10 @@ PrefabInstance:
     - target: {fileID: -8679921383154817045, guid: fa3af89d4b7de8044bc0ea966711d1ff, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -4932982780345470907, guid: fa3af89d4b7de8044bc0ea966711d1ff, type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: fa3af89d4b7de8044bc0ea966711d1ff, type: 3}
       propertyPath: m_Name
@@ -5637,7 +5732,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LoopTeleport
   targetLandingRoot: {fileID: 6831809008895282190}
   thisLandingRoot: {fileID: 7478885920977852875}
-  characterController: {fileID: 1592984635}
+  characterController: {fileID: 0}
   playerInteraction: {fileID: 330585550}
 --- !u!1 &682579317429920831
 GameObject:
@@ -5696,7 +5791,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::LoopTeleport
   targetLandingRoot: {fileID: 7478885920977852875}
   thisLandingRoot: {fileID: 6831809008895282190}
-  characterController: {fileID: 1592984635}
+  characterController: {fileID: 0}
   playerInteraction: {fileID: 330585550}
 --- !u!1 &984400861300405455
 GameObject:

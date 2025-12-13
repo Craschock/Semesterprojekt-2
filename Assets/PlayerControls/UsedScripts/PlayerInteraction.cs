@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 /// <summary>
 /// Handles player interaction:
-/// - pick up / drop items
+/// - pick up / drop items with MOMENTUM and COLLISION FIXES
 /// - preview placement on PlaceSlot
 /// - place items into PlaceSlot or take from it
 /// - disables rotation while previewing
@@ -13,8 +13,8 @@ public class PlayerInteraction : MonoBehaviour
     [Header("Interaction")]
     public float interactDistance = 3f;      // max raycast distance to interact
     public Transform holdPoint;              // world-space target where held item moves to
-    public float pickupSmoothing = 1f;       // blend speed used when picking up (transition)
-    public float holdSmoothing = 12f;        // smoothing speed for following the hold point
+    public float pickupSmoothing = 10f;      // blend speed used when picking up (transition)
+    public float holdSmoothing = 15f;        // smoothing speed for following the hold point
     public float rotationSpeed = 80f;        // base rotation speed for focus mode
 
     [Header("Preview")]
@@ -25,12 +25,15 @@ public class PlayerInteraction : MonoBehaviour
     public float focusRotationMultiplier = 3f;
     public float maxYaw = 135f;   // horizontal left/right limit (A/D)
     public float maxPitch = 45f;  // vertical up/down limit (W/S)
-    public float focusReturnSmoothing = 1f;
+    public float focusReturnSmoothing = 5f;
 
-    [Header("Item Physics")]
+    [Header("Item Physics & Collision")]
     public float maxHoldDistance = 3f;
-    public float wallCheckRadius = 0.3f;
-    public LayerMask environmentMask;
+    public float throwForceMultiplier = 1f; // Adjust to make throws stronger/weaker
+
+    // Mask used to stop held item from clipping (Walls + Other Items)
+    // The script AUTOMATICALLY removes 'Player' from this mask in Start()
+    public LayerMask collisionMask;
 
     [Header("References")]
     public PlayerMovement playerMovement;
@@ -45,6 +48,11 @@ public class PlayerInteraction : MonoBehaviour
     private float pickupBlend = 0f;
     private float previewBlend = 0f;
     private float previewExitBlend = 0f;
+
+    // Physics & Momentum tracking
+    private Collider playerCollider; // Reference to player's CharacterController/Collider
+    private Vector3 lastHeldPosition;
+    private Vector3 currentThrowVelocity;
 
     // runtime
     private Camera cam;
@@ -72,7 +80,6 @@ public class PlayerInteraction : MonoBehaviour
         // ------------------------------------------------------
         // INPUT HANDLING: EVENT REGISTRATION
         // ------------------------------------------------------
-        // Instead of checking in Update, we subscribe to the event here.
         input.Player.Interact.performed += OnInteractPerformed;
 
         focusAction = input.Player.Focus;
@@ -85,6 +92,12 @@ public class PlayerInteraction : MonoBehaviour
 
         // compute held layer index (user must create this layer in editor)
         heldItemLayerIndex = LayerMask.NameToLayer(heldItemLayerName);
+
+        // Find the player collider to ignore collisions later
+        // Assuming PlayerInteraction is on Camera, go up to PlayerMesh or Player Root
+        playerCollider = transform.root.GetComponentInChildren<CharacterController>();
+        if (playerCollider == null)
+            playerCollider = transform.root.GetComponentInChildren<Collider>();
     }
 
     // Don't forget to Enable/Disable
@@ -106,6 +119,20 @@ public class PlayerInteraction : MonoBehaviour
             if (heldItemLayerIndex >= 0)
                 raycastMask &= ~(1 << heldItemLayerIndex); // ignore held item layer for raycasts
         }
+
+        // Auto-configure Collision Mask if empty
+        if (collisionMask == 0)
+        {
+            collisionMask = Physics.DefaultRaycastLayers;
+        }
+
+        // CRITICAL FIX: Explicitly remove the Player layer from the collision mask.
+        // This stops the SphereCast from hitting the player's own body and flinging the item.
+        int playerLayer = LayerMask.NameToLayer("Player");
+        if (playerLayer >= 0)
+        {
+            collisionMask &= ~(1 << playerLayer);
+        }
     }
 
     private void Update()
@@ -124,7 +151,7 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     // ------------------------------------------------------
-    // EVENT-BASED INTERACTION LOGIC (Ist effizienter)
+    // NEW EVENT-BASED INTERACTION LOGIC
     // This only runs when [E] is actually pressed.
     // ------------------------------------------------------
     private void OnInteractPerformed(InputAction.CallbackContext ctx)
@@ -142,6 +169,14 @@ public class PlayerInteraction : MonoBehaviour
             if (!previewSlot.HasItem())
             {
                 previewSlot.PlaceItem(heldItem);
+
+                // restore collision when placing in slot!
+                Collider itemCol = heldItem.GetComponent<Collider>();
+                if (playerCollider != null && itemCol != null)
+                {
+                    Physics.IgnoreCollision(playerCollider, itemCol, false);
+                }
+
                 heldItem = null;
                 isPreviewing = false;
                 previewSlot = null;
@@ -186,9 +221,6 @@ public class PlayerInteraction : MonoBehaviour
 
     // --------------------------
     // Raycast and detect hit
-    // - prefers PlaceSlot if hit
-    // - handles preview state when holding an item and aiming at a slot
-    // - NOW also checks for HintInteractable
     // --------------------------
     private void HandleRaycast()
     {
@@ -322,70 +354,87 @@ public class PlayerInteraction : MonoBehaviour
     private void HandleHeldObject()
     {
         if (heldItem == null) return;
-
         Transform item = heldItem.transform;
 
-        // ramp pickup blend to 1 for pickup transitions
+        // 1. Momentum Calculation
+        Vector3 displacement = item.position - lastHeldPosition;
+        if (Time.deltaTime > 0)
+            currentThrowVelocity = displacement / Time.deltaTime;
+        currentThrowVelocity = Vector3.ClampMagnitude(currentThrowVelocity, 20f);
+        lastHeldPosition = item.position;
+
         pickupBlend = Mathf.Clamp01(pickupBlend + Time.deltaTime * pickupSmoothing);
 
-        // choose target position/rotation depending on preview state
-        Vector3 targetPos;
-        Quaternion targetRot;
-
+        // 2. Preview Mode
         if (isPreviewing && previewSlot != null)
         {
-            // preview mode: lerp toward slot's preview transform
             Transform previewT = previewSlot.GetPreviewTransform();
-            targetPos = previewT.position;
-            targetRot = previewT.rotation;
-
-            // smooth with a previewBlend (snappier than normal hold)
             previewBlend = Mathf.Clamp01(previewBlend + Time.deltaTime * previewSmoothing);
-            item.position = Vector3.Lerp(item.position, targetPos, Time.deltaTime * holdSmoothing * previewBlend);
-            item.rotation = Quaternion.Slerp(item.rotation, targetRot, Time.deltaTime * holdSmoothing * previewBlend);
+            item.position = Vector3.Lerp(item.position, previewT.position, Time.deltaTime * holdSmoothing * previewBlend);
+            item.rotation = Quaternion.Slerp(item.rotation, previewT.rotation, Time.deltaTime * holdSmoothing * previewBlend);
             return;
         }
 
-        // Normal held behavior: follow holdPoint, with wall clipping protection
-        targetPos = holdPoint.position;
-        targetRot = holdPoint.rotation;
+        // 3. Normal Hold - SMART COLLISION CHECK
+        Vector3 targetPos = holdPoint.position;
+        Quaternion targetRot = holdPoint.rotation;
 
         Vector3 direction = holdPoint.position - cam.transform.position;
         float distance = direction.magnitude;
-        if (Physics.SphereCast(cam.transform.position, wallCheckRadius, direction, out RaycastHit hit, distance, environmentMask))
+        RaycastHit hit;
+        bool hasHit = false;
+
+        Collider col = heldItem.GetComponent<Collider>();
+
+        // CHECK COLLIDER TYPE
+        if (col is BoxCollider box)
         {
-            targetPos = hit.point - direction.normalized * 0.1f;
+            // Calculate half extents properly scaled
+            Vector3 halfExtents = Vector3.Scale(box.size, heldItem.transform.lossyScale) * 0.5f;
+            // Slightly shrink (0.95f) to avoid snagging on tiny imperfections
+            halfExtents *= 0.95f;
+
+            hasHit = Physics.BoxCast(
+                cam.transform.position,
+                halfExtents,
+                direction,
+                out hit,
+                heldItem.transform.rotation,
+                distance,
+                collisionMask
+            );
+        }
+        else if (col is SphereCollider sphere)
+        {
+            float radius = sphere.radius * Mathf.Max(heldItem.transform.lossyScale.x, heldItem.transform.lossyScale.y, heldItem.transform.lossyScale.z);
+            hasHit = Physics.SphereCast(cam.transform.position, radius, direction, out hit, distance, collisionMask);
+        }
+        else
+        {
+            // Capsule, Mesh, or other: Fallback to a tiny SphereCast so it fits everywhere
+            hasHit = Physics.SphereCast(cam.transform.position, 0.05f, direction, out hit, distance, collisionMask);
         }
 
-        // If exiting preview, smoothly blend back from the preview state
+        if (hasHit)
+        {
+            targetPos = cam.transform.position + direction.normalized * hit.distance;
+        }
+
+        // 4. Smooth Exit from Preview
         if (previewExitBlend > 0f)
         {
             previewExitBlend = Mathf.Clamp01(previewExitBlend - Time.deltaTime * 4f);
-
-            item.position = Vector3.Lerp(
-                item.position,
-                targetPos,
-                Time.deltaTime * holdSmoothing * (pickupBlend * (1f - previewExitBlend))
-            );
-
-            // also smooth rotation
-            item.rotation = Quaternion.Slerp(
-                item.rotation,
-                targetRot,
-                Time.deltaTime * holdSmoothing * (1f - previewExitBlend)
-            );
-
+            item.position = Vector3.Lerp(item.position, targetPos, Time.deltaTime * holdSmoothing * (pickupBlend * (1f - previewExitBlend)));
+            item.rotation = Quaternion.Slerp(item.rotation, targetRot, Time.deltaTime * holdSmoothing * (1f - previewExitBlend));
             return;
         }
 
+        // 5. Final Move
         item.position = Vector3.Lerp(item.position, targetPos, Time.deltaTime * holdSmoothing * pickupBlend);
 
-        // rotation only reset when NOT in focus mode and NOT previewing
         if (!inFocusMode)
         {
-            if (focusReturnBlend < 1f)
-                focusReturnBlend = Mathf.Clamp01(focusReturnBlend + Time.deltaTime * focusReturnSmoothing);
-
+            if (focusReturnBlend < 1f) focusReturnBlend = Mathf.Clamp01(focusReturnBlend + Time.deltaTime * focusReturnSmoothing);
             item.rotation = Quaternion.Slerp(item.rotation, targetRot, Time.deltaTime * holdSmoothing * focusReturnBlend);
         }
     }
@@ -442,7 +491,6 @@ public class PlayerInteraction : MonoBehaviour
     {
         if (isPreviewing) return; // block rotation during preview
 
-        //Also bro wer auch immer das liest dieses smoothing macht mich fr crazy
         float rotX = rotateXAction.ReadValue<float>();
         float rotY = rotateYAction.ReadValue<float>();
 
@@ -472,12 +520,21 @@ public class PlayerInteraction : MonoBehaviour
 
         heldItem = item;
         heldItem.SetHeld(true);
+        lastHeldPosition = item.transform.position; // Init momentum
 
         Rigidbody rb = item.GetComponent<Rigidbody>();
         if (rb != null)
         {
             rb.useGravity = false;
             rb.isKinematic = true;
+        }
+
+        Collider itemCol = item.GetComponent<Collider>();
+
+        // force ignore collision with HeldItem
+        if (playerCollider != null && itemCol != null)
+        {
+            Physics.IgnoreCollision(playerCollider, itemCol, true);
         }
 
         // unparent; we will lerp toward holdPoint
@@ -494,10 +551,21 @@ public class PlayerInteraction : MonoBehaviour
         if (heldItem == null) return;
 
         Rigidbody rb = heldItem.GetComponent<Rigidbody>();
+        Collider itemCol = heldItem.GetComponent<Collider>();
+
+        // restore collision with player (HeldItem)
+        if (playerCollider != null && itemCol != null)
+        {
+            Physics.IgnoreCollision(playerCollider, itemCol, false);
+        }
+
         if (rb != null)
         {
             rb.useGravity = true;
             rb.isKinematic = false;
+
+            // APPLY MOMENTUM
+            rb.linearVelocity = currentThrowVelocity * throwForceMultiplier;
         }
 
         heldItem.SetHeld(false);
