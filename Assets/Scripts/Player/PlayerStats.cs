@@ -1,0 +1,243 @@
+using UnityEngine;
+using UnityEngine.Events;
+
+public class PlayerStats : MonoBehaviour
+{
+    [Header("Configuration")]
+    public float maxHealth = 100f;
+    public float maxStamina = 100f;
+    public float maxFear = 100f;
+    public float maxPurity = 100f;
+
+    [Header("Regeneration")]
+    public bool regenerateStamina = true;
+    public float staminaRegenRate = 15f;
+    public float staminaDrainRate = 20f;
+
+    // Other references
+    private ConsumableOnConsume effectHandler;
+
+    // This struct holds the raw data we will want to save to a file later
+    [System.Serializable]
+    public struct PlayerData
+    {
+        public float health;
+        public float stamina;
+        public float fear;
+        public float purity;
+
+        // --- Inventory Data ---
+        public ConsumableType[] inventory; // Array of size 2
+    }
+
+    // The actual instance of our data
+    [SerializeField]
+    private PlayerData currentStats;
+
+    // --- Selected Slot Tracker ---
+    // 0 = Left Hand (Slot 1), 1 = Right Hand (Slot 2)
+    private int selectedSlotIndex = 0;
+
+    // Events 
+    public UnityEvent<float> OnHealthChanged;
+    public UnityEvent<float> OnStaminaChanged;
+    public UnityEvent<float> OnFearChanged;
+    public UnityEvent<float> OnPurityChanged;
+
+    // Event for UI to update inventory slots (optional but recommended)
+    public UnityEvent<int, ConsumableType> OnInventoryChanged; // int = slotIndex, type = item
+    public UnityEvent<int> OnSlotSelected; // int = newly selected index
+
+    private void Awake()
+    {
+        // Get consumableOnConsume reference
+        effectHandler = GetComponent<ConsumableOnConsume>();
+    }
+
+    private void Start()
+    {
+        ResetStats();
+    }
+
+    private void Update()
+    {
+        HandleStaminaRegen();
+    }
+
+    private void ResetStats()
+    {
+        currentStats.health = maxHealth;
+        currentStats.stamina = maxStamina;
+        currentStats.fear = 0f;
+        currentStats.purity = 100f;
+
+        // Initialize Inventory (Size 2)
+        currentStats.inventory = new ConsumableType[2];
+        currentStats.inventory[0] = ConsumableType.None;
+        currentStats.inventory[1] = ConsumableType.None;
+
+        selectedSlotIndex = 0; // Default to Slot 1
+
+        UpdateAllEvents();
+    }
+
+    // --- LOGIC: INVENTORY & CONSUMABLES ---
+
+    public void SelectSlot(int index)
+    {
+        if (index < 0 || index >= currentStats.inventory.Length) return;
+
+        selectedSlotIndex = index;
+        Debug.Log($"[PlayerStats] Selected Slot {index + 1}. Item: {currentStats.inventory[index]}");
+        OnSlotSelected?.Invoke(selectedSlotIndex);
+    }
+
+    public int GetSelectedSlotIndex() => selectedSlotIndex;
+
+    // Tries to add item. Returns true if successful, false if full.
+    public bool AddConsumable(ConsumableType item)
+    {
+        // 1. Try to fill Slot 1 first if empty
+        if (currentStats.inventory[0] == ConsumableType.None)
+        {
+            currentStats.inventory[0] = item;
+            Debug.Log($"[PlayerStats] Added {item} to Slot 1");
+            OnInventoryChanged?.Invoke(0, item);
+            return true;
+        }
+        // 2. Try to fill Slot 2 if empty
+        else if (currentStats.inventory[1] == ConsumableType.None)
+        {
+            currentStats.inventory[1] = item;
+            Debug.Log($"[PlayerStats] Added {item} to Slot 2");
+            OnInventoryChanged?.Invoke(1, item);
+            return true;
+        }
+
+        Debug.Log("[PlayerStats] Inventory Full!");
+        return false;
+    }
+
+    // Returns the item in the currently selected slot and clears the slot
+    public ConsumableType ConsumeSelectedSlot()
+    {
+        
+        ConsumableType item = currentStats.inventory[selectedSlotIndex];
+
+        if (item != ConsumableType.None)
+        {
+            if (effectHandler != null)
+            {
+                effectHandler.ApplyEffect(item);
+            }
+            else
+            {
+                Debug.LogWarning("ConsumableOnConsume component missing from Player object!");
+            }
+
+            // Remove item from inventory
+            currentStats.inventory[selectedSlotIndex] = ConsumableType.None;
+            OnInventoryChanged?.Invoke(selectedSlotIndex, ConsumableType.None);
+            Debug.Log($"[PlayerStats] Consumed {item} from Slot {selectedSlotIndex + 1}");
+            return item;
+        }
+
+        return ConsumableType.None;
+    }
+
+    // --- LOGIC: STAMINA ---
+    private void HandleStaminaRegen()
+    {
+        if (regenerateStamina && currentStats.stamina < maxStamina)
+        {
+            currentStats.stamina += staminaRegenRate * Time.deltaTime;
+            currentStats.stamina = Mathf.Clamp(currentStats.stamina, 0, maxStamina);
+        }
+    }
+
+    public bool HasStamina(float amount) => currentStats.stamina >= amount;
+
+    public void UseStamina(float amount)
+    {
+        currentStats.stamina -= amount;
+        currentStats.stamina = Mathf.Clamp(currentStats.stamina, 0, maxStamina);
+        regenerateStamina = false;
+    }
+
+    public void StartStaminaRegen() => regenerateStamina = true;
+    public void StopStaminaRegen() => regenerateStamina = false;
+
+    // --- LOGIC: HEALTH ---
+    public void TakeDamage(float amount)
+    {
+        currentStats.health -= amount;
+        currentStats.health = Mathf.Clamp(currentStats.health, 0, maxHealth);
+        OnHealthChanged?.Invoke(currentStats.health / maxHealth);
+
+        if (currentStats.health <= 0) Die();
+    }
+
+    public void Heal(float amount)
+    {
+        currentStats.health += amount;
+        currentStats.health = Mathf.Clamp(currentStats.health, 0, maxHealth);
+        OnHealthChanged?.Invoke(currentStats.health / maxHealth);
+        Debug.Log($"[PlayerStats] Healed Player by {amount}");
+    }
+
+    private void Die() => Debug.Log("Player Died");
+
+    // --- LOGIC: FEAR ---
+    public void AddFear(float amount)
+    {
+        currentStats.fear += amount;
+        currentStats.fear = Mathf.Clamp(currentStats.fear, 0, maxFear);
+        OnFearChanged?.Invoke(currentStats.fear / maxFear);
+    }
+
+    public void ReduceFear(float amount)
+    {
+        currentStats.fear -= amount;
+        currentStats.fear = Mathf.Clamp(currentStats.fear, 0, maxFear);
+        OnFearChanged?.Invoke(currentStats.fear / maxFear);
+    }
+
+    // --- LOGIC: PURITY ---
+    public void ReducePurity(float amount)
+    {
+        currentStats.purity -= amount;
+        currentStats.purity = Mathf.Clamp(currentStats.purity, 0, maxPurity);
+        OnPurityChanged?.Invoke(currentStats.purity / maxPurity);
+    }
+
+    public void RestorePurity(float amount)
+    {
+        currentStats.purity += amount;
+        currentStats.purity = Mathf.Clamp(currentStats.purity, 0, maxPurity);
+        OnPurityChanged?.Invoke(currentStats.purity / maxPurity);
+    }
+
+    // --- HELPERS FOR SAVE SYSTEM ---
+    public PlayerData GetStatsData() => currentStats;
+
+    public void LoadStatsData(PlayerData loadedData)
+    {
+        currentStats = loadedData;
+        UpdateAllEvents();
+    }
+
+    private void UpdateAllEvents()
+    {
+        OnHealthChanged?.Invoke(currentStats.health / maxHealth);
+        OnStaminaChanged?.Invoke(currentStats.stamina / maxStamina);
+        OnFearChanged?.Invoke(currentStats.fear / maxFear);
+        OnPurityChanged?.Invoke(currentStats.purity / maxPurity);
+
+        // Update Inventory Events on Load
+        if (currentStats.inventory != null)
+        {
+            OnInventoryChanged?.Invoke(0, currentStats.inventory[0]);
+            OnInventoryChanged?.Invoke(1, currentStats.inventory[1]);
+        }
+    }
+}
