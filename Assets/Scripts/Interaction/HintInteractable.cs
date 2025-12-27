@@ -10,6 +10,9 @@ public class HintInteractable : MonoBehaviour, IInteractable
     [Header("Hint Content")]
     public Sprite hintSprite; // PNG (imported as Sprite)
 
+    [TextArea(5, 10)] // Makes a nice big text box in the Inspector
+    public string hintContent;
+
     // Reference to the outline script (assumed to be on the same object or child)
     private OutlineController outline;
 
@@ -37,6 +40,6 @@ public class HintInteractable : MonoBehaviour, IInteractable
         // Show the hint UI and freeze player controls (option B behavior)
         HintUIManager manager = HintUIManager.Instance;
         if (manager != null)
-            manager.ShowHint(hintSprite, interactor);
+            manager.ShowHint(hintSprite, hintContent, interactor);
     }
 }

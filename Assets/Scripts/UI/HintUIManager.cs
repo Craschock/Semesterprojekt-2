@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// Global manager for displaying hint images (paper notes).
@@ -17,6 +18,7 @@ public class HintUIManager : MonoBehaviour
     public CanvasGroup root;      // container for easy show/hide (optional but recommended)
     public Image dimmer;          // full-screen black/grey image (alpha > 0)
     public Image hintImage;       // centered image that displays the PNG
+    public TextMeshProUGUI hintTextDisplay;
 
     private bool isHintOpen = false;
     private PlayerMovement cachedMovement; // stored while hint is open
@@ -26,7 +28,6 @@ public class HintUIManager : MonoBehaviour
 
     private void Awake()
     {
-        // singleton (simple and safe)
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
@@ -34,14 +35,13 @@ public class HintUIManager : MonoBehaviour
         }
         Instance = this;
 
-        // start hidden
         SetVisible(false);
     }
 
     /// <summary>
-    /// Open a hint: show UI and freeze movement + look (option B).
+    /// Open a hint: show UI and freeze movement + look.
     /// </summary>
-    public void ShowHint(Sprite sprite, PlayerInteraction interactor)
+    public void ShowHint(Sprite sprite, string text, PlayerInteraction interactor)
     {
         if (sprite == null || interactor == null) return;
 
@@ -51,13 +51,19 @@ public class HintUIManager : MonoBehaviour
 
         // set image
         hintImage.sprite = sprite;
-        hintImage.SetNativeSize(); // keeps correct aspect (good for PNG notes)
+        hintImage.SetNativeSize(); // keeps correct aspect
+
+        // set text
+        if (hintTextDisplay != null)
+        {
+            hintTextDisplay.text = text;
+        }
 
         // show UI
         SetVisible(true);
         isHintOpen = true;
 
-        // freeze controls (option B)
+        // freeze controls
         if (cachedMovement != null) cachedMovement.enabled = false;
         if (cachedLook != null) cachedLook.lookEnabled = false;
     }
@@ -90,5 +96,6 @@ public class HintUIManager : MonoBehaviour
 
         if (dimmer != null) dimmer.gameObject.SetActive(visible);
         if (hintImage != null) hintImage.gameObject.SetActive(visible);
+        if (hintTextDisplay != null) hintTextDisplay.gameObject.SetActive(visible);
     }
 }

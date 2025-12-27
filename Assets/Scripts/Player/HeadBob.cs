@@ -4,7 +4,7 @@
 /// Handles camera head-bob animation while walking or sprinting.
 /// - Disabled while reading hints or in focus mode.
 /// - Handles Figure-8 movement.
-/// - NOW HANDLES CAMERA HEIGHT FOR CROUCHING.
+/// - Now handles camera height for crouching.
 /// </summary>
 public class HeadBob : MonoBehaviour
 {

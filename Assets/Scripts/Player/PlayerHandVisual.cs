@@ -9,6 +9,13 @@ public class PlayerHandVisuals : MonoBehaviour
     [Tooltip("The empty GameObject child of the MainCamera positioned on the right.")]
     public Transform rightHandSlot;
 
+    [Header("Highlight Settings")]
+    [Tooltip("How far the selected item moves relative to its start position.")]
+    public Vector3 selectionOffset = new Vector3(-0.1f, 0.1f, 0.2f);
+    [Tooltip("If true, the X offset is inverted for the left hand (symmetry).")]
+    public bool mirrorXForLeftHand = true;  //If Left Hand
+    public float movementSmoothing = 10f;
+
     [Header("Item Mappings")]
     [Tooltip("Map each ConsumableType to a specific Prefab here.")]
     public List<ItemVisualMapping> itemMappings;
@@ -21,16 +28,26 @@ public class PlayerHandVisuals : MonoBehaviour
         public GameObject modelPrefab;
     }
 
-    private void Start()
+    // State
+    private Vector3 leftStartPos;
+    private Vector3 rightStartPos;
+    private int currentSelectionIndex = -1;
+
+    private void Awake()
     {
-        // 1. Find PlayerStats
+        // Capture the default positions you set in the editor
+        if (leftHandSlot != null) leftStartPos = leftHandSlot.localPosition;
+        if (rightHandSlot != null) rightStartPos = rightHandSlot.localPosition;
+
         PlayerStats stats = GetComponent<PlayerStats>();
 
         if (stats != null)
         {
-            // 2. Listen to the Inventory Changed event
-            // Whenever stats runs "OnInventoryChanged.Invoke()", our UpdateHandVisuals method runs automatically.
+            // Listen for Inventory changes (Updates meshes)
             stats.OnInventoryChanged.AddListener(UpdateHandVisuals);
+
+            // Listen for Slot Selection (Updates positions)
+            stats.OnSlotSelected.AddListener(OnSlotSelectionChanged);
         }
         else
         {
@@ -38,36 +55,67 @@ public class PlayerHandVisuals : MonoBehaviour
         }
     }
 
-    // This method is called automatically by the Event system
+    private void Update()
+    {
+        // Smoothly animate hands to their target positions
+        MoveHand(leftHandSlot, GetTargetPosition(0), Time.deltaTime * movementSmoothing);
+        MoveHand(rightHandSlot, GetTargetPosition(1), Time.deltaTime * movementSmoothing);
+    }
+
+    // Calculates where the hand SHOULD be based on selection
+    private Vector3 GetTargetPosition(int handIndex)
+    {
+        // 0 = Left, 1 = Right
+        if (handIndex == 0)
+        {
+            // If Left is selected, add offset. Otherwise, go to start.
+            if (currentSelectionIndex == 0)
+            {
+                Vector3 finalOffset = selectionOffset;
+                if (mirrorXForLeftHand) finalOffset.x = -finalOffset.x; // Flip X for symmetry
+                return leftStartPos + finalOffset;
+            }
+            return leftStartPos;
+        }
+        else
+        {
+            // If Right is selected, add offset.
+            if (currentSelectionIndex == 1) return rightStartPos + selectionOffset;
+            return rightStartPos;
+        }
+    }
+
+    private void MoveHand(Transform hand, Vector3 targetPos, float step)
+    {
+        if (hand == null) return;
+        hand.localPosition = Vector3.Lerp(hand.localPosition, targetPos, step);
+    }
+
+    // Event Listener
+    private void OnSlotSelectionChanged(int newIndex)
+    {
+        currentSelectionIndex = newIndex;
+    }
+
+    // --- MESH SPAWNING LOGIC ---
     public void UpdateHandVisuals(int slotIndex, ConsumableType newItemType)
     {
-        // 1. Determine which hand we are updating
         Transform targetHand = (slotIndex == 0) ? leftHandSlot : rightHandSlot;
-
         if (targetHand == null) return;
 
-        // 2. Destroy the current object in that hand (if any)
-        foreach (Transform child in targetHand)
-        {
-            Destroy(child.gameObject);
-        }
+        foreach (Transform child in targetHand) Destroy(child.gameObject);
 
-        // 3. If the new item is "None", we are done (hand is now empty)
         if (newItemType == ConsumableType.None) return;
 
-        // 4. Find the matching prefab for the new item type
         GameObject prefabToSpawn = GetPrefabByType(newItemType);
-
         if (prefabToSpawn != null)
         {
-            // 5. Instantiate the mesh and parent it to the hand slot
             GameObject newObj = Instantiate(prefabToSpawn, targetHand);
-
-            // 6. Reset position/rotation to align perfectly with the slot
             newObj.transform.localPosition = Vector3.zero;
             newObj.transform.localRotation = Quaternion.identity;
 
-            // Optional: Ensure layer is set to something that doesn't block the camera raycast if needed
+            // Fix layers recursively so they don't block camera raycasts if needed
+            SetLayerRecursive(newObj, gameObject.layer);
         }
     }
 
@@ -75,12 +123,14 @@ public class PlayerHandVisuals : MonoBehaviour
     {
         foreach (var mapping in itemMappings)
         {
-            if (mapping.type == type)
-            {
-                return mapping.modelPrefab;
-            }
+            if (mapping.type == type) return mapping.modelPrefab;
         }
-        Debug.LogWarning($"[PlayerHandVisuals] No prefab assigned for item type: {type}");
         return null;
+    }
+
+    private void SetLayerRecursive(GameObject obj, int layer)
+    {
+        obj.layer = layer;
+        foreach (Transform child in obj.transform) SetLayerRecursive(child.gameObject, layer);
     }
 }

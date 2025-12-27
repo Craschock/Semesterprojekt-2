@@ -35,7 +35,7 @@ public class PlayerStats : MonoBehaviour
     private PlayerData currentStats;
 
     // --- Selected Slot Tracker ---
-    // 0 = Left Hand (Slot 1), 1 = Right Hand (Slot 2)
+    // -1 = None, 0 = Left Hand (Slot 1), 1 = Right Hand (Slot 2)
     private int selectedSlotIndex = 0;
 
     // Events 
@@ -76,7 +76,7 @@ public class PlayerStats : MonoBehaviour
         currentStats.inventory[0] = ConsumableType.None;
         currentStats.inventory[1] = ConsumableType.None;
 
-        selectedSlotIndex = 0; // Default to Slot 1
+        selectedSlotIndex = -1;
 
         UpdateAllEvents();
     }
@@ -85,10 +85,18 @@ public class PlayerStats : MonoBehaviour
 
     public void SelectSlot(int index)
     {
-        if (index < 0 || index >= currentStats.inventory.Length) return;
+        if (selectedSlotIndex == index) // If same slot
+        {
+            selectedSlotIndex = -1; // Deselect
+            Debug.Log($"[PlayerStats] Deselected Slot {index + 1}");
+        }
+        else
+        {
+            selectedSlotIndex = index; // Select new
+            Debug.Log($"[PlayerStats] Selected Slot {index + 1}. Item: {currentStats.inventory[index]}");
+        }
 
-        selectedSlotIndex = index;
-        Debug.Log($"[PlayerStats] Selected Slot {index + 1}. Item: {currentStats.inventory[index]}");
+        // We pass -1 if nothing is selected
         OnSlotSelected?.Invoke(selectedSlotIndex);
     }
 
@@ -103,6 +111,12 @@ public class PlayerStats : MonoBehaviour
             currentStats.inventory[0] = item;
             Debug.Log($"[PlayerStats] Added {item} to Slot 1");
             OnInventoryChanged?.Invoke(0, item);
+
+            // --- AUTO SELECT SLOT 1 ---
+            selectedSlotIndex = 0;
+            OnSlotSelected?.Invoke(selectedSlotIndex);
+            // --------------------------
+
             return true;
         }
         // 2. Try to fill Slot 2 if empty
@@ -111,6 +125,12 @@ public class PlayerStats : MonoBehaviour
             currentStats.inventory[1] = item;
             Debug.Log($"[PlayerStats] Added {item} to Slot 2");
             OnInventoryChanged?.Invoke(1, item);
+
+            // --- AUTO SELECT SLOT 2 ---
+            selectedSlotIndex = 1;
+            OnSlotSelected?.Invoke(selectedSlotIndex);
+            // --------------------------
+
             return true;
         }
 
@@ -121,7 +141,9 @@ public class PlayerStats : MonoBehaviour
     // Returns the item in the currently selected slot and clears the slot
     public ConsumableType ConsumeSelectedSlot()
     {
-        
+        // If nothing selected, do nothing.
+        if (selectedSlotIndex == -1) return ConsumableType.None;
+
         ConsumableType item = currentStats.inventory[selectedSlotIndex];
 
         if (item != ConsumableType.None)
