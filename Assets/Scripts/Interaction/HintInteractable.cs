@@ -3,7 +3,6 @@ using UnityEngine;
 /// <summary>
 /// A world-space hint (paper note) the player can interact with.
 /// When interacted, it opens the Hint UI (PNG + dim background) and freezes player movement + look.
-/// Updated to work with the optimized OutlineController on the parent object.
 /// </summary>
 public class HintInteractable : MonoBehaviour, IInteractable
 {
@@ -13,7 +12,7 @@ public class HintInteractable : MonoBehaviour, IInteractable
     [TextArea(5, 10)] // Makes a nice big text box in the Inspector
     public string hintContent;
 
-    // Reference to the outline script (assumed to be on the same object or child)
+    // Reference to the outline script
     private OutlineController outline;
 
     private void Awake()

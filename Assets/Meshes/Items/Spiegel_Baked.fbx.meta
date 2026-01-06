@@ -1,9 +1,39 @@
 fileFormatVersion: 2
-guid: 400df79ec634fe54385fc7d4b0781196
+guid: b602aa1160c53fe43916ac5c16f411a6
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
-  externalObjects: {}
+  externalObjects:
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: IMG_7210-e1468150208761-scaled2
+    second: {fileID: 2800000, guid: 1d2f3a74f6800274caa9091ed57a5bb1, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: IMG_7210-e1468150208761-scaled3
+    second: {fileID: 2800000, guid: 73b0584e4e71a8344bda894b8b92b805, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Spiegel Glass Color
+    second: {fileID: 2800000, guid: 46c11e8eee902984e885048c2b4ba858, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Spiegel Glass Roughness
+    second: {fileID: 2800000, guid: ecb640b2b8771c140a9192d3c45cc061, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Spiegel Holz Color
+    second: {fileID: 2800000, guid: 70aaf5cc6cc053d46b7db6ae90b94833, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Spiegel Holz Roughness
+    second: {fileID: 2800000, guid: d2ae82afb603f45418996d514974ab56, type: 3}
   materials:
     materialImportMode: 2
     materialName: 0

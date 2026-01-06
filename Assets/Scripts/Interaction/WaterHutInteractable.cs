@@ -1,13 +1,13 @@
 using UnityEngine;
 
 /// <summary>
-/// A world-space consumable (item) the player can interact with.
-/// When interacted, it tries to insert itself into the inventory to be consumed from the player.
+/// A world-space Water Hut (Purity) the player can interact with.
+/// When interacted, it recharges the players purity.
 /// </summary>
-public class ConsumableInteractable : MonoBehaviour, IInteractable
+public class WaterHutInteractable : MonoBehaviour, IInteractable
 {
-    [Header("Item Settings")]
-    public ConsumableType type;
+    [Header("Purity Settings")]
+    public float amount = 100;
 
     // Reference to the outline script
     private OutlineController outline;
@@ -19,10 +19,7 @@ public class ConsumableInteractable : MonoBehaviour, IInteractable
 
     public void OnInteract(PlayerInteraction interactor)
     {
-        // Logic is handled by PlayerInteraction calling PlayerStats, 
-        interactor.TryPickUpConsumable(this.type); // returns boolean
-        // if true: despawn
-        // if false: nothing
+        interactor.playerStats.RestorePurity(amount);
     }
 
     public void OnFocus()

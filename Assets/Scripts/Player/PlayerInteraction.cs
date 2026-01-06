@@ -236,7 +236,15 @@ public class PlayerInteraction : MonoBehaviour
             return;
         }
 
-        // 7. CASE: Drop held item
+        // 7. CASE: Use WaterHut
+        WaterHutInteractable waterHut = currentInteractable as WaterHutInteractable;
+        if (waterHut != null && heldItem == null)
+        {
+            waterHut.OnInteract(this);
+            return;
+        }
+
+        // 8. CASE: Drop held item
         if (heldItem != null)
         {
             DropItem();
@@ -391,6 +399,28 @@ public class PlayerInteraction : MonoBehaviour
 
                 // show consumable prompt
                 ShowPrompt("Press [E] to Take Item");
+
+                return;
+            }
+
+            // Check for WaterHutInteractable
+            WaterHutInteractable waterHut = hit.collider.GetComponent<WaterHutInteractable>();
+            if (waterHut != null)
+            {
+                // no slot preview needed here
+                if (isPreviewing)
+                    CancelPreview();
+
+                // manage focus transitions
+                if (currentInteractable != waterHut)
+                {
+                    currentInteractable?.OnLoseFocus();
+                    currentInteractable = waterHut;
+                    currentInteractable?.OnFocus();
+                }
+
+                // show consumable prompt
+                ShowPrompt("Press [E] to Clean Yourself");
 
                 return;
             }
