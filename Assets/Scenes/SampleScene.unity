@@ -14,12 +14,12 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 10
-  m_Fog: 0
-  m_FogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  m_Fog: 1
+  m_FogColor: {r: 0.3019608, g: 0.35686275, b: 0.3529412, a: 1}
   m_FogMode: 3
-  m_FogDensity: 0.01
+  m_FogDensity: 0.1
   m_LinearFogStart: 0
-  m_LinearFogEnd: 300
+  m_LinearFogEnd: 15
   m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
@@ -93,7 +93,7 @@ LightmapSettings:
     m_ExportTrainingData: 0
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
-  m_LightingDataAsset: {fileID: 20201, guid: 0000000000000000f000000000000000, type: 0}
+  m_LightingDataAsset: {fileID: 112000000, guid: af92615ac42b73e4da2a840991222397, type: 2}
   m_LightingSettings: {fileID: 0}
 --- !u!196 &4
 NavMeshSettings:
@@ -420,7 +420,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -50, y: 0}
+  m_AnchoredPosition: {x: 35, y: 35}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &240836891
@@ -1391,6 +1391,7 @@ GameObject:
   m_Component:
   - component: {fileID: 404910668}
   - component: {fileID: 404910669}
+  - component: {fileID: 404910670}
   m_Layer: 0
   m_Name: TutorialPuzzle
   m_TagString: Untagged
@@ -1437,6 +1438,21 @@ MonoBehaviour:
   - {fileID: 1729703949}
   - {fileID: 501126456}
   puzzleCompleted: 0
+--- !u!114 &404910670
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 404910667}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5be5710ce5c85c4419897dea50446238, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FogController
+  initialFogDensity: 0.1
+  clearedFogDensity: 0.05
+  clearingDuration: 10
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -2812,10 +2828,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 821816fcdb5c03a4f965417696fef90a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HintInteractable
-  hintSprite: {fileID: 21300000, guid: dd186a17be5a7764d88ec8bdefb2f865, type: 3}
-  hintContent: "Lorum Ipsum \nLorum Ipsum Lorum Ipsum Lorum Ipsum Lorum Ipsum Lorum
-    Ipsum Lorum Ipsum Lorum Ipsum Lorum Ipsum Lorum Ipsum Lorum Ipsum Lorum Ipsum
-    Lorum Ipsum Lorum Ipsum "
+  hintSprite: {fileID: 21300000, guid: c993f85092379ee41afe1d869d9dbb87, type: 3}
+  hintContent: 'Below is a bloody floor.
+
+
+
+    With a smile, she asks, "Am I pretty?"
+
+    Your
+    answer will determine your fate.
+
+    Run away as much as you want. She''ll wait
+    for you as long as you want.'
 --- !u!114 &751928471
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4488,63 +4512,6 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 5665763164275481281, guid: fa3af89d4b7de8044bc0ea966711d1ff, type: 3}
---- !u!1001 &1252024594
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: -8679921383154817045, guid: 612e96b7a76074b49ac23439542ded4e, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -1.981
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 612e96b7a76074b49ac23439542ded4e, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0.16935433
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 612e96b7a76074b49ac23439542ded4e, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 5.993
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 612e96b7a76074b49ac23439542ded4e, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 612e96b7a76074b49ac23439542ded4e, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 612e96b7a76074b49ac23439542ded4e, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 612e96b7a76074b49ac23439542ded4e, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 612e96b7a76074b49ac23439542ded4e, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 612e96b7a76074b49ac23439542ded4e, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: 612e96b7a76074b49ac23439542ded4e, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 919132149155446097, guid: 612e96b7a76074b49ac23439542ded4e, type: 3}
-      propertyPath: m_Name
-      value: Nokia_Baked
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 612e96b7a76074b49ac23439542ded4e, type: 3}
 --- !u!1 &1255859627
 GameObject:
   m_ObjectHideFlags: 0
@@ -6671,9 +6638,9 @@ RectTransform:
   - {fileID: 264606697}
   m_Father: {fileID: 668904710}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 1, y: 0.5}
-  m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -680, y: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2100127422
@@ -8371,4 +8338,3 @@ SceneRoots:
   - {fileID: 366402184}
   - {fileID: 1048046284}
   - {fileID: 601000190}
-  - {fileID: 1252024594}

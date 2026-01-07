@@ -8,6 +8,13 @@ public class BambooPuzzleManager : MonoBehaviour
     [Header("Debug")]
     public bool puzzleCompleted = false;
 
+    private FogController fog;
+
+    private void Awake() 
+    {
+        fog = GetComponent<FogController>();
+    }
+
     private void Update()
     {
         if (!puzzleCompleted && CheckPuzzleComplete())
@@ -31,6 +38,10 @@ public class BambooPuzzleManager : MonoBehaviour
     {
         Debug.Log("Puzzle Completed!");
 
+        if (fog != null)
+        {
+            fog.ClearFog();
+        }
         // TODO: Trigger animation, unlock door, disable looping stairs, etc.
     }
 }
