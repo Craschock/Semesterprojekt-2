@@ -28,17 +28,17 @@ public class OutlineController : MonoBehaviour
 
     private void Start()
     {
-        // 1. Initialize Layers
+        // Initialize Layers
         defaultLayer = LayerMask.NameToLayer("Item");
         proximityLayer = LayerMask.NameToLayer("OutlineProximity");
         highlightLayer = LayerMask.NameToLayer("OutlineHighlight");
         heldItemLayerIndex = LayerMask.NameToLayer("HeldItem");
         ignoreRaycastLayer = LayerMask.NameToLayer("Ignore Raycast");
 
-        // 2. Cache References (Look on THIS object, the Parent)
+        // Cache References (Look on THIS object, the Parent)
         cachedPickup = GetComponent<PickupInteractable>();
 
-        // FIND COLLIDER: Look in children for the Sensor (Sphere Trigger)
+        // find collider in children for the Sensor (Sphere Trigger)
         var allColliders = GetComponentsInChildren<SphereCollider>(true);
         foreach (var col in allColliders)
         {
@@ -49,7 +49,7 @@ public class OutlineController : MonoBehaviour
             }
         }
 
-        // 3. AUTO-FIX RADIUS
+        // AUTO-FIX RADIUS
         if (proximityCollider != null)
         {
             Transform t = proximityCollider.transform;
@@ -57,7 +57,7 @@ public class OutlineController : MonoBehaviour
             if (maxScale > 0) proximityCollider.radius = proximityRadius / maxScale;
         }
 
-        // 4. Set Initial Layers
+        // Set Initial Layers
         SetLayerRecursive(defaultLayer);
     }
 

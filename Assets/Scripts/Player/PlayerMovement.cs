@@ -38,6 +38,9 @@ public class PlayerMovement : MonoBehaviour
     private float gravity = -9.81f;
     private Vector3 velocity;
 
+    // The direction we are NOT allowed to move towards
+    private Vector3? restrictedMoveDirection = null;
+
     private void Awake()
     {
         controls = new PlayerControls();
@@ -61,6 +64,16 @@ public class PlayerMovement : MonoBehaviour
         HandleFOV();
     }
 
+    public void SetMovementRestriction(Vector3 directionFromPlayerToObject)
+    {
+        restrictedMoveDirection = directionFromPlayerToObject.normalized;
+    }
+
+    public void ClearMovementRestriction()
+    {
+        restrictedMoveDirection = null;
+    }
+
     void HandleCrouchPhysics()
     {
         float targetHeight = isCrouching ? crouchHeight : standHeight;
@@ -79,6 +92,21 @@ public class PlayerMovement : MonoBehaviour
     {
         moveInput = controls.Player.Move.ReadValue<Vector2>();
         Vector3 move = transform.right * moveInput.x + transform.forward * moveInput.y;
+
+        // apply cursed object restriction
+        if (restrictedMoveDirection.HasValue && move.magnitude > 0.1f)
+        {
+            // Dot Product checks alignment. 
+            // > 0 means we are trying to move closer to the cursed object.
+            float dot = Vector3.Dot(move.normalized, restrictedMoveDirection.Value);
+
+            if (dot > 0)
+            {
+                // Remove the component of the movement that goes towards the object
+                // This allows strafing and moving backward, but stops forward movement.
+                move -= restrictedMoveDirection.Value * dot * move.magnitude;
+            }
+        }
 
         float currentSpeed = walkSpeed;
 

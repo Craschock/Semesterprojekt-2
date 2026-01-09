@@ -5,6 +5,21 @@ ModelImporter:
   internalIDToNameTable: []
   externalObjects:
   - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal Baked (Simple)
+    second: {fileID: 2100000, guid: 7de4699fd6aecb24e8f7db8e8d3b1854, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Metal with rust and brush
+    second: {fileID: 2100000, guid: c428b2d994517cb4bb81e17187bf9c61, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Rusty Metal baked
+    second: {fileID: 2100000, guid: 24c3708ca597490439deaa15d0199bef, type: 2}
+  - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
       name: 'Feuerzeug Body Color '

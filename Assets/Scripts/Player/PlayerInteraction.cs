@@ -173,14 +173,14 @@ public class PlayerInteraction : MonoBehaviour
     // ------------------------------------------------------
     private void OnInteractPerformed(InputAction.CallbackContext ctx)
     {
-        // 1. Priority: Close Hint
+        // Priority: Close Hint
         if (hintUI != null && hintUI.IsHintOpen)
         {
             hintUI.HideHint();
             return;
         }
 
-        // 2. CASE: Place into slot (while previewing)
+        // CASE: Place into slot (while previewing)
         if (isPreviewing && previewSlot != null && heldItem != null)
         {
             if (!previewSlot.HasItem())
@@ -202,7 +202,7 @@ public class PlayerInteraction : MonoBehaviour
             return;
         }
 
-        // 3. CASE: Take item from slot
+        // CASE: Take item from slot
         PlaceSlot slot = currentInteractable as PlaceSlot;
         if (slot != null && heldItem == null && slot.HasItem())
         {
@@ -212,7 +212,7 @@ public class PlayerInteraction : MonoBehaviour
             return;
         }
 
-        // 4. CASE: Pickup world item
+        // CASE: Pickup world item
         PickupInteractable pickup = currentInteractable as PickupInteractable;
         if (pickup != null && heldItem == null && !pickup.IsSlotted)
         {
@@ -220,7 +220,7 @@ public class PlayerInteraction : MonoBehaviour
             return;
         }
 
-        // 5. CASE: Read Hint 
+        // CASE: Read Hint 
         HintInteractable hint = currentInteractable as HintInteractable;
         if (hint != null && heldItem == null)
         {
@@ -228,7 +228,7 @@ public class PlayerInteraction : MonoBehaviour
             return;
         }
 
-        // 6. CASE: Take Consumable
+        // CASE: Take Consumable
         ConsumableInteractable consumable = currentInteractable as ConsumableInteractable;
         if (consumable != null && heldItem == null)
         {
@@ -236,7 +236,7 @@ public class PlayerInteraction : MonoBehaviour
             return;
         }
 
-        // 7. CASE: Use WaterHut
+        // CASE: Use WaterHut
         WaterHutInteractable waterHut = currentInteractable as WaterHutInteractable;
         if (waterHut != null && heldItem == null)
         {
@@ -244,7 +244,15 @@ public class PlayerInteraction : MonoBehaviour
             return;
         }
 
-        // 8. CASE: Drop held item
+        // CASE: TakeCursedObject
+        CursedObject cursedObject = currentInteractable as CursedObject;
+        if (cursedObject != null && heldItem == null)
+        {
+            cursedObject.OnInteract(this);
+            return;
+        }
+
+        // CASE: Drop held item
         if (heldItem != null)
         {
             DropItem();
@@ -421,6 +429,28 @@ public class PlayerInteraction : MonoBehaviour
 
                 // show consumable prompt
                 ShowPrompt("Press [E] to Clean Yourself");
+
+                return;
+            }
+
+            // Check for CursedObject
+            CursedObject cursedObject = hit.collider.GetComponent<CursedObject>();
+            if (cursedObject != null)
+            {
+                // no slot preview needed here
+                if (isPreviewing)
+                    CancelPreview();
+
+                // manage focus transitions
+                if (currentInteractable != cursedObject)
+                {
+                    currentInteractable?.OnLoseFocus();
+                    currentInteractable = cursedObject;
+                    currentInteractable?.OnFocus();
+                }
+
+                // show consumable prompt
+                ShowPrompt("Press [E] to Burn");
 
                 return;
             }

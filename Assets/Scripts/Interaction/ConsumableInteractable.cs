@@ -20,9 +20,16 @@ public class ConsumableInteractable : MonoBehaviour, IInteractable
     public void OnInteract(PlayerInteraction interactor)
     {
         // Logic is handled by PlayerInteraction calling PlayerStats, 
-        interactor.TryPickUpConsumable(this.type); // returns boolean
-        // if true: despawn
-        // if false: nothing
+        bool wasPickedUp = interactor.TryPickUpConsumable(this.type);
+
+        if (wasPickedUp)
+        {
+            gameObject.SetActive(false);
+        }
+        else
+        {
+            Debug.Log("Inventory full");
+        }
     }
 
     public void OnFocus()
