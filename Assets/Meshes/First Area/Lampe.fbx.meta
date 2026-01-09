@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: a13ba86db54cd9d49aab9e99f7254117
+guid: 0a98054e15ae80340b71c9fc524d7e28
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
@@ -7,48 +7,33 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
-      name: BambusBark.001
-    second: {fileID: 2100000, guid: 8954af419edd8c84b871f032d869035c, type: 2}
+      name: Glass
+    second: {fileID: 2100000, guid: 8715e09374fb2c048b3715f29e18acfa, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
-      name: BambusBranch.001
-    second: {fileID: 2100000, guid: 8e031101566e6e142966699e9e3891b4, type: 2}
+      name: Lantern Concrete
+    second: {fileID: 2100000, guid: 85616c2246e333d4bbad104016a50bf4, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
-      name: BambusJoint.001
-    second: {fileID: 2100000, guid: 67d01cd8c601ce244b4423d3a9117ba7, type: 2}
+      name: Rot
+    second: {fileID: 2100000, guid: 370d946d8f6b04b4abf20d6421a55f73, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
-      name: BambusSmallBranch1.006
-    second: {fileID: 2100000, guid: 55d7735171a189f4088c1568d6723aca, type: 2}
+      name: Rot.002
+    second: {fileID: 2100000, guid: 370d946d8f6b04b4abf20d6421a55f73, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
-      name: BambusSmallTwig.001
-    second: {fileID: 2100000, guid: 2ef8ebe4b263dd34190648fe9c2d9761, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: BambusSmallestBranch.006
-    second: {fileID: 2100000, guid: 5e7bf75c2deb09c4fb9ff74aabc34ae0, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: pngtree-a-single-bamboo-leaf-pngeftwswswswswsws-image_20123362.001
-    second: {fileID: 2100000, guid: c8163f52e8b31494db87269ba4e7d2c9, type: 2}
+      name: Schwarz
+    second: {fileID: 2100000, guid: 1252bbd2ee05e6b42bba0fb0272c123c, type: 2}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
-      name: Bambus Baum Color
-    second: {fileID: 2800000, guid: db9685a822839cd4595252a3dbd7bf2f, type: 3}
-  - first:
-      type: UnityEngine:Texture2D
-      assembly: UnityEngine.CoreModule
-      name: pngtree-a-single-bamboo-leaf-pngeftwswswswswsws-image_20123362
-    second: {fileID: 2800000, guid: 302c77d958fe5cc4d975f410029dcaf6, type: 3}
+      name: Lampe Sockel Color
+    second: {fileID: 2800000, guid: 58dac3d66277c2f46a431e49f48d92da, type: 3}
   materials:
     materialImportMode: 2
     materialName: 0
