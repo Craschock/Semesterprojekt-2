@@ -6,7 +6,9 @@ public class BambooPuzzleManager : MonoBehaviour
     public PlaceSlot[] slots;
 
     [Header("Debug")]
+    public GameObject teleport;
     public bool puzzleCompleted = false;
+
 
     private FogController fog;
 
@@ -42,6 +44,10 @@ public class BambooPuzzleManager : MonoBehaviour
         {
             fog.ClearFog();
         }
-        // TODO: Trigger animation, unlock door, disable looping stairs, etc.
+
+        if (teleport != null) 
+        {
+            teleport.SetActive(false);
+        }
     }
 }

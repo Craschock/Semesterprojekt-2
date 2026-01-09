@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 7e9ff7547d3333a4b8956187ef78f250
+guid: 6fc1b86c9fb0fed48b8aa00c193765cb
 ModelImporter:
   serializedVersion: 24200
   internalIDToNameTable: []
@@ -7,33 +7,23 @@ ModelImporter:
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
-      name: Metal Baked (Simple)
-    second: {fileID: 2100000, guid: 7de4699fd6aecb24e8f7db8e8d3b1854, type: 2}
+      name: Fabric PBR_procedural
+    second: {fileID: 2100000, guid: a6ae82ff14c2bcf4bb00f4ed99a96f47, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
-      name: Metal with rust and brush
-    second: {fileID: 2100000, guid: c428b2d994517cb4bb81e17187bf9c61, type: 2}
-  - first:
-      type: UnityEngine:Material
-      assembly: UnityEngine.CoreModule
-      name: Rusty Metal baked.001
-    second: {fileID: 2100000, guid: 3b16c9f59d60af74fb449fad5e91b309, type: 2}
+      name: Procedural Fabric
+    second: {fileID: 2100000, guid: 3b7ee87a1ba28eb4eba25087de2ac3f7, type: 2}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
-      name: 'Feuerzeug Body Color '
-    second: {fileID: 2800000, guid: 83b7a93f04737014fa22d60d98e52930, type: 3}
+      name: Tori Cloth Color
+    second: {fileID: 2800000, guid: e357fe67f82e38445bf0dbcd3e51d1cb, type: 3}
   - first:
       type: UnityEngine:Texture2D
       assembly: UnityEngine.CoreModule
-      name: Feuerzeug Body Roughness
-    second: {fileID: 2800000, guid: 934f14031ea313548af55cdfddf4e07a, type: 3}
-  - first:
-      type: UnityEngine:Texture2D
-      assembly: UnityEngine.CoreModule
-      name: Feuerzeug Top Roughness
-    second: {fileID: 2800000, guid: 20f6dca032f71204ebd3550fa8f4d392, type: 3}
+      name: Tori Cloth Roughness
+    second: {fileID: 2800000, guid: 8247fed9ad882e34ba67758dbfe9205a, type: 3}
   materials:
     materialImportMode: 2
     materialName: 0
