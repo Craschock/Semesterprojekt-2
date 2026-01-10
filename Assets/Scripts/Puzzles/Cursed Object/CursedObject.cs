@@ -5,12 +5,12 @@ public class CursedObject : MonoBehaviour, IInteractable
     [Header("Settings")]
     public Transform visualCenter;
     public LayerMask obstructionMask;
+    public Collider curseSensorCollider;
 
     // References
     private OutlineController outline;
     private PlayerMovement playerMovement;
     private Camera playerCam;
-    private Collider myCollider;
 
     // State
     private bool isPlayerInRange = false;
@@ -25,9 +25,9 @@ public class CursedObject : MonoBehaviour, IInteractable
         playerCam = Camera.main;
         if (visualCenter == null) visualCenter = transform;
 
-        if (GetComponentInChildren<SphereCollider>() == null)
+        if (curseSensorCollider == null)
         {
-            Debug.LogWarning("CursedObject is missing its Child SphereCollider Sensor!");
+            Debug.LogError($"[CursedObject] '{name}' is missing the 'Curse Sensor Collider' reference! Please assign it in the Inspector.");
         }
     }
 
@@ -60,23 +60,17 @@ public class CursedObject : MonoBehaviour, IInteractable
     }
 
     // --- CURSE LOGIC ---
-    private void OnTriggerEnter(Collider other)
+    public void OnCurseZoneEnter(Collider player)
     {
-        if (other.CompareTag("Player"))
-        {
-            isPlayerInRange = true;
-            playerMovement = other.GetComponent<PlayerMovement>();
-        }
+        isPlayerInRange = true;
+        playerMovement = player.GetComponent<PlayerMovement>();
     }
 
-    private void OnTriggerExit(Collider other)
+    public void OnCurseZoneExit(Collider player)
     {
-        if (other.CompareTag("Player"))
-        {
-            LiftCurse();
-            isPlayerInRange = false;
-            playerMovement = null;
-        }
+        LiftCurse();
+        isPlayerInRange = false;
+        playerMovement = null;
     }
 
     private void Update()
