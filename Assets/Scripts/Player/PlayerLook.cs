@@ -11,7 +11,9 @@ public class PlayerLook : MonoBehaviour
 
     private PlayerControls controls;
     private Vector2 lookInput;
+    private Vector2 normalizedLookInput;
     private float xRotation = 0f;
+    private float normalizedScale = 200f;
 
     [Header("Settings")]
     public float sensitivity = 2f;
@@ -31,7 +33,7 @@ public class PlayerLook : MonoBehaviour
     {
         controls.Disable();
     }
-
+    
     private void Update()
     {
         // skip camera rotation if disabled (e.g. when inspecting an object)
@@ -39,7 +41,8 @@ public class PlayerLook : MonoBehaviour
             return;
 
         // read look vector from new Input System (mouse/gamepad)
-        lookInput = controls.Player.Look.ReadValue<Vector2>() * sensitivity * Time.deltaTime;
+        lookInput = controls.Player.Look.ReadValue<Vector2>();
+        normalizedLookInput = (lookInput / normalizedScale) * sensitivity;
 
         xRotation -= lookInput.y;
         xRotation = Mathf.Clamp(xRotation, -90f, 90f);
