@@ -44,10 +44,10 @@ public class PlayerLook : MonoBehaviour
         lookInput = controls.Player.Look.ReadValue<Vector2>();
         normalizedLookInput = (lookInput / normalizedScale) * sensitivity;
 
-        xRotation -= lookInput.y;
+        xRotation -= normalizedLookInput.y;
         xRotation = Mathf.Clamp(xRotation, -90f, 90f);
 
         transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
-        playerBody.Rotate(Vector3.up * lookInput.x);
+        playerBody.Rotate(Vector3.up * normalizedLookInput.x);
     }
 }
