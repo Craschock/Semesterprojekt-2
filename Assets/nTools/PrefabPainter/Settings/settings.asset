@@ -649,7 +649,7 @@ MonoBehaviour:
       settings:
         brushRadius: 1
         brushSpacing: 0.5
-        brushOverlapCheckMode: 0
+        brushOverlapCheckMode: 1
         brushOverlapDistance: 0.5
         brushOverlapCheckObjects: 1
         brushOverlapCheckLayers:
@@ -666,7 +666,7 @@ MonoBehaviour:
         scaleTransformMode: 0
         scaleMode: 0
         scaleUniformMin: 0.5
-        scaleUniformMax: 1.2
+        scaleUniformMax: 1.5
         scalePerAxisMin: {x: 1, y: 1, z: 1}
         scalePerAxisMax: {x: 1, y: 1, z: 1}
         pinFixedRotation: 0
@@ -957,15 +957,15 @@ MonoBehaviour:
       - gameObject: {fileID: 0}
       - gameObject: {fileID: 0}
       selectedSlot: 0
-      selected: 0
+      selected: 1
       colorTag: 0
       customPreviewImage: {fileID: 0}
     - name: P_Bush01
       settings:
-        brushRadius: 1
+        brushRadius: 20
         brushSpacing: 0.5
-        brushOverlapCheckMode: 0
-        brushOverlapDistance: 0.5
+        brushOverlapCheckMode: 1
+        brushOverlapDistance: 2
         brushOverlapCheckObjects: 1
         brushOverlapCheckLayers:
           serializedVersion: 2
@@ -975,13 +975,13 @@ MonoBehaviour:
         orientationMode: 0
         alongBrushStroke: 0
         rotation: {x: 0, y: 0, z: 0}
-        randomizeOrientationX: 0
-        randomizeOrientationY: 0
-        randomizeOrientationZ: 0
+        randomizeOrientationX: 3.7
+        randomizeOrientationY: 92
+        randomizeOrientationZ: 3.7
         scaleTransformMode: 0
         scaleMode: 0
-        scaleUniformMin: 1.2
-        scaleUniformMax: 2
+        scaleUniformMin: 1
+        scaleUniformMax: 3
         scalePerAxisMin: {x: 1, y: 1, z: 1}
         scalePerAxisMax: {x: 1, y: 1, z: 1}
         pinFixedRotation: 0
@@ -1272,15 +1272,15 @@ MonoBehaviour:
       - gameObject: {fileID: 0}
       - gameObject: {fileID: 0}
       selectedSlot: 0
-      selected: 1
+      selected: 0
       colorTag: 0
       customPreviewImage: {fileID: 0}
     - name: P_Bush02
       settings:
-        brushRadius: 1
+        brushRadius: 20
         brushSpacing: 0.5
-        brushOverlapCheckMode: 0
-        brushOverlapDistance: 0.5
+        brushOverlapCheckMode: 1
+        brushOverlapDistance: 2
         brushOverlapCheckObjects: 1
         brushOverlapCheckLayers:
           serializedVersion: 2
@@ -1290,13 +1290,13 @@ MonoBehaviour:
         orientationMode: 0
         alongBrushStroke: 0
         rotation: {x: 0, y: 0, z: 0}
-        randomizeOrientationX: 0
-        randomizeOrientationY: 0
-        randomizeOrientationZ: 0
+        randomizeOrientationX: 3.7
+        randomizeOrientationY: 92
+        randomizeOrientationZ: 3.7
         scaleTransformMode: 0
         scaleMode: 0
         scaleUniformMin: 1
-        scaleUniformMax: 1
+        scaleUniformMax: 3
         scalePerAxisMin: {x: 1, y: 1, z: 1}
         scalePerAxisMax: {x: 1, y: 1, z: 1}
         pinFixedRotation: 0
@@ -1592,9 +1592,9 @@ MonoBehaviour:
       customPreviewImage: {fileID: 0}
     - name: P_Bush04
       settings:
-        brushRadius: 1
+        brushRadius: 6.7
         brushSpacing: 0.5
-        brushOverlapCheckMode: 0
+        brushOverlapCheckMode: 1
         brushOverlapDistance: 0.5
         brushOverlapCheckObjects: 1
         brushOverlapCheckLayers:
@@ -1605,13 +1605,13 @@ MonoBehaviour:
         orientationMode: 0
         alongBrushStroke: 0
         rotation: {x: 0, y: 0, z: 0}
-        randomizeOrientationX: 0
-        randomizeOrientationY: 0
-        randomizeOrientationZ: 0
+        randomizeOrientationX: 3.7
+        randomizeOrientationY: 92
+        randomizeOrientationZ: 3.7
         scaleTransformMode: 0
         scaleMode: 0
         scaleUniformMin: 1
-        scaleUniformMax: 1
+        scaleUniformMax: 2
         scalePerAxisMin: {x: 1, y: 1, z: 1}
         scalePerAxisMax: {x: 1, y: 1, z: 1}
         pinFixedRotation: 0
@@ -2541,7 +2541,7 @@ MonoBehaviour:
     levelsOutBlack: 0
     levelsOutWhite: 255
   activeTab: 0
-  paintOnSelected: 0
+  paintOnSelected: 1
   paintLayers:
     serializedVersion: 2
     m_Bits: 1
@@ -2549,8 +2549,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 32
   placeUnder: 2
-  overwritePrefabLayer: 1
-  prefabPlaceLayer: 5
+  overwritePrefabLayer: 0
+  prefabPlaceLayer: 0
   pinSnapRotationValue: 15
   pinSnapScaleValue: 0.1
   pinSnapRotation: 0
