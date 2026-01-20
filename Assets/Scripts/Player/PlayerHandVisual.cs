@@ -103,6 +103,7 @@ public class PlayerHandVisuals : MonoBehaviour
         Transform targetHand = (slotIndex == 0) ? leftHandSlot : rightHandSlot;
         if (targetHand == null) return;
 
+        // Delete old models
         foreach (Transform child in targetHand) Destroy(child.gameObject);
 
         if (newItemType == ConsumableType.None) return;
@@ -115,7 +116,8 @@ public class PlayerHandVisuals : MonoBehaviour
             newObj.transform.localRotation = Quaternion.identity;
 
             // Fix layers recursively so they don't block camera raycasts if needed
-            SetLayerRecursive(newObj, gameObject.layer);
+            // 2 is ignoreRaycast Layer
+            SetLayerRecursive(newObj, 2);
         }
     }
 
