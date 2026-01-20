@@ -4,6 +4,7 @@ using UnityEngine;
 /// A world-space consumable (item) the player can interact with.
 /// When interacted, it tries to insert itself into the inventory to be consumed from the player.
 /// </summary>
+[RequireComponent(typeof(OutlineController))]
 public class ConsumableInteractable : MonoBehaviour, IInteractable
 {
     [Header("Item Settings")]

@@ -252,6 +252,14 @@ public class PlayerInteraction : MonoBehaviour
             return;
         }
 
+        // CASE: Statue Puzzle Interaction
+        StatueInteractable statue = currentInteractable as StatueInteractable;
+        if (statue != null && heldItem == null)
+        {
+            statue.OnInteract(this);
+            return;
+        }
+
         // CASE: Drop held item
         if (heldItem != null)
         {
@@ -452,6 +460,33 @@ public class PlayerInteraction : MonoBehaviour
                 // show consumable prompt
                 ShowPrompt("Press [E] to Burn");
 
+                return;
+            }
+
+            // Check for StatueInteractable
+            StatueInteractable statueHit = hit.collider.GetComponent<StatueInteractable>();
+            if (statueHit != null)
+            {
+                // no slot preview needed here
+                if (isPreviewing) CancelPreview();
+
+                // manage focus transitions (Outline an/aus)
+                if (currentInteractable != statueHit)
+                {
+                    currentInteractable?.OnLoseFocus();
+                    currentInteractable = statueHit;
+                    currentInteractable?.OnFocus();
+                }
+
+                // Only show prompt when statue is intertactable
+                if (!statueHit.IsActivated())
+                {
+                    ShowPrompt("Press [E] to Inspect");
+                }
+                else
+                {
+                    HidePrompt();
+                }
                 return;
             }
 

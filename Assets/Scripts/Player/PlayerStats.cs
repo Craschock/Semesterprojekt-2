@@ -14,6 +14,8 @@ public class PlayerStats : MonoBehaviour
     public float staminaRegenRate = 15f;
     public float staminaDrainRate = 20f;
 
+    private bool areHandsActive = true;
+
     // Other references
     private ConsumableOnConsume effectHandler;
 
@@ -102,6 +104,34 @@ public class PlayerStats : MonoBehaviour
 
     public int GetSelectedSlotIndex() => selectedSlotIndex;
 
+    public void SetHandsActive(bool active)
+    {
+        areHandsActive = active;
+
+        if (active)
+        {
+            // Íf active; Restore the visuals based on actual inventory
+
+            if (currentStats.inventory != null)
+            {
+                OnInventoryChanged?.Invoke(0, currentStats.inventory[0]);
+                OnInventoryChanged?.Invoke(1, currentStats.inventory[1]);
+            }
+            // Stelle sicher, dass die Position (Selection) auch wieder stimmt
+            OnSlotSelected?.Invoke(selectedSlotIndex);
+
+            Debug.Log("[PlayerStats] Hands Reactivated.");
+        }
+        else
+        {
+            // If not active: Fake empty inventory to visuals
+            OnInventoryChanged?.Invoke(0, ConsumableType.None);
+            OnInventoryChanged?.Invoke(1, ConsumableType.None);
+            OnSlotSelected?.Invoke(-1);
+
+            Debug.Log("[PlayerStats] Hands Deactivated (Hidden).");
+        }
+    }
     // Tries to add item. Returns true if successful, false if full.
     public bool AddConsumable(ConsumableType item)
     {
@@ -141,6 +171,9 @@ public class PlayerStats : MonoBehaviour
     // Returns the item in the currently selected slot and clears the slot
     public ConsumableType ConsumeSelectedSlot()
     {
+        // If hands are deactivated, do nothing
+        if (!areHandsActive) return ConsumableType.None;
+
         // If nothing selected, do nothing.
         if (selectedSlotIndex == -1) return ConsumableType.None;
 

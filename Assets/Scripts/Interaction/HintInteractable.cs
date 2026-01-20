@@ -4,6 +4,7 @@ using UnityEngine;
 /// A world-space hint (paper note) the player can interact with.
 /// When interacted, it opens the Hint UI (PNG + dim background) and freezes player movement + look.
 /// </summary>
+[RequireComponent(typeof(OutlineController))]
 public class HintInteractable : MonoBehaviour, IInteractable
 {
     [Header("Hint Content")]

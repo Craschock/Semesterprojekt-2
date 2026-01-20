@@ -6,6 +6,7 @@ using UnityEngine;
 /// - OutlineController located on a child mesh (it will be found automatically)
 /// - Proper layer syncing by asking the OutlineController to set layers recursively
 /// </summary>
+[RequireComponent(typeof(OutlineController))]
 public class PickupInteractable : MonoBehaviour, IInteractable
 {
     public bool IsHeld { get; private set; } = false;

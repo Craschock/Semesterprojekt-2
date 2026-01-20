@@ -1,5 +1,6 @@
 using UnityEngine;
 
+[RequireComponent(typeof(OutlineController))]
 public class CursedObject : MonoBehaviour, IInteractable
 {
     [Header("Settings")]

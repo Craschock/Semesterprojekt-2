@@ -116,8 +116,9 @@ public class PlayerHandVisuals : MonoBehaviour
             newObj.transform.localRotation = Quaternion.identity;
 
             // Fix layers recursively so they don't block camera raycasts if needed
-            // 2 is ignoreRaycast Layer
-            SetLayerRecursive(newObj, 2);
+            // fp layer so that items render ontop of the environment
+            int fpLayer = LayerMask.NameToLayer("FirstPerson");
+            SetLayerRecursive(newObj, fpLayer);
         }
     }
 

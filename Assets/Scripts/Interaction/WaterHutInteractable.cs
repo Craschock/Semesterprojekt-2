@@ -4,6 +4,7 @@ using UnityEngine;
 /// A world-space Water Hut (Purity) the player can interact with.
 /// When interacted, it recharges the players purity.
 /// </summary>
+[RequireComponent(typeof(OutlineController))]
 public class WaterHutInteractable : MonoBehaviour, IInteractable
 {
     [Header("Purity Settings")]
