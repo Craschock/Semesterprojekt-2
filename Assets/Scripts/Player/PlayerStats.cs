@@ -29,6 +29,15 @@ public class PlayerStats : MonoBehaviour
         public float fear;
         public float purity;
 
+        //puzzle progress
+        public bool bambooPuzzle = false;
+        public bool lightPuzzle = false;
+        public bool statuePuzzle = false;
+        public bool cursedPuzzle = false;
+
+        //location
+        public Vector3 playerPosition;
+
         // --- Inventory Data ---
         public ConsumableType[] inventory; // Array of size 2
     }
@@ -279,6 +288,7 @@ public class PlayerStats : MonoBehaviour
     public void LoadStatsData(PlayerData loadedData)
     {
         currentStats = loadedData;
+        transform.position = loadedData.playerPosition;
         UpdateAllEvents();
     }
 
@@ -302,6 +312,9 @@ public class PlayerStats : MonoBehaviour
     [ContextMenu("Jetzt Speichern")]
     public void SaveGame()
     {
+        //capture position at time of saving (avoids constant saving, causing lag (maybe))
+        currentStats.playerPosition = transform.position;
+
         //convert struct to json
         string json = JsonUtility.ToJson(currentStats, true);
         
