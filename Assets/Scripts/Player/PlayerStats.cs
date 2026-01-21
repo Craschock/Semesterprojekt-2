@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.Events;
-using Sytem.IO;
+using System.IO;
 
 public class PlayerStats : MonoBehaviour
 {
@@ -327,7 +327,6 @@ public class PlayerStats : MonoBehaviour
         LoadStatsData(loadedData);
         Debug.Log("game loaded successfully.");
         }
-    }
     
     //delete entire save file
     public void DeleteSaveFile()
@@ -336,3 +335,4 @@ public class PlayerStats : MonoBehaviour
         string path = Path.Combine(Application.persistentDataPath, "playerSaveData.json");
         File.Delete(path);
     }
+}
