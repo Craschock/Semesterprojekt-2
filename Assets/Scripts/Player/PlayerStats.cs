@@ -30,10 +30,10 @@ public class PlayerStats : MonoBehaviour
         public float purity;
 
         //puzzle progress
-        public bool bambooPuzzle = false;
-        public bool lightPuzzle = false;
-        public bool statuePuzzle = false;
-        public bool cursedPuzzle = false;
+        public bool bambooPuzzle;
+        public bool lightPuzzle;
+        public bool statuePuzzle;
+        public bool cursedPuzzle;
 
         //location
         public Vector3 playerPosition;

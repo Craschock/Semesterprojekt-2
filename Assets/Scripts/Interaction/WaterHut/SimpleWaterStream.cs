@@ -3,7 +3,7 @@ using UnityEngine;
 [RequireComponent(typeof(LineRenderer))]
 public class SimpleWaterStream : MonoBehaviour
 {
-    [Header("Physik Einstellungen")]
+    [Header("Physics")]
     public Vector3 startVelocity = new Vector3(0, 0, 2f);
     public float gravity = -9.81f;
 
@@ -12,13 +12,13 @@ public class SimpleWaterStream : MonoBehaviour
     public float maxSimulationTime = 1.5f;
     public float textureScrollSpeed = 2f;
 
-    [Header("Wellen-Form (Dicke)")]
+    [Header("Wave-Form (Thicc-ness)")]
     public float baseWidth = 0.1f;      // Die normale Dicke
     public float waveAmount = 0.03f;    // Wie stark der Strahl dicker/dünner wird
     public float waveFrequency = 10f;   // Wie viele "Beulen" der Strahl hat
     public float waveSpeed = 5f;        // Wie schnell die Beulen nach unten wandern
 
-    // Performance-Optimierung: Wir nutzen weniger Keys für die Kurve als Punkte für die Linie
+    // Performance-Optimierung (laut ai soll ich das machen)
     private const int CURVE_RESOLUTION = 10;
 
     private LineRenderer lr;
@@ -37,7 +37,7 @@ public class SimpleWaterStream : MonoBehaviour
         AnimateThicknessCurve();
     }
 
-    // 1. Berechnet die Flugbahn (Wurfparabel)
+    // Calculate trajectory
     private void DrawStreamPhysics()
     {
         Vector3[] points = new Vector3[resolution];
@@ -59,7 +59,7 @@ public class SimpleWaterStream : MonoBehaviour
         lr.SetPositions(points);
     }
 
-    // 2. Bewegt die Textur, damit es fließt
+    // Move texture for flowing effect
     private void AnimateWaterTexture()
     {
         if (waterMat != null)
@@ -69,7 +69,7 @@ public class SimpleWaterStream : MonoBehaviour
         }
     }
 
-    // 3. Berechnet die wellenförmige Dicke ("Traveling Wave")
+    // Calculate wave thicccccc-ness ("Traveling Wave")
     private void AnimateThicknessCurve()
     {
         Keyframe[] keys = new Keyframe[CURVE_RESOLUTION + 1];
