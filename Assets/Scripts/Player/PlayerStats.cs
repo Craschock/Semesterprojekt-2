@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Events;
+using Sytem.IO;
 
 public class PlayerStats : MonoBehaviour
 {
@@ -110,7 +111,7 @@ public class PlayerStats : MonoBehaviour
 
         if (active)
         {
-            // Íf active; Restore the visuals based on actual inventory
+            // ï¿½f active; Restore the visuals based on actual inventory
 
             if (currentStats.inventory != null)
             {
@@ -295,4 +296,43 @@ public class PlayerStats : MonoBehaviour
             OnInventoryChanged?.Invoke(1, currentStats.inventory[1]);
         }
     }
-}
+
+    // --- LOGIC: SAVE & LOAD (JSON) ---
+    //save data
+    public void SaveGame()
+    {
+        //convert struct to json
+        string json = JsonUtility.ToJson(currentStats, true);
+        
+        //define path where data will be stroed
+        string path = Path.Combine(Application.persistentDataPath, "playerSaveData.json");
+
+        //write json into file
+        File.WriteAllText(path, json);
+        Debug.Log($"created save file at {path}");
+    }
+
+    //load back data
+    public void LoadGame()
+    {
+        string path = Path.Combine(Application.persistentDataPath, "playerSaveData.json");
+
+        //get text out file
+        string json = File.ReadAllText(path);
+
+        //convert json back into struct (idk if this technically creates a struct but whatever, it works)
+        PlayerData loadedData = JsonUtility.FromJson<PlayerData>(json);
+
+        //apply struct into data
+        LoadStatsData(loadedData);
+        Debug.Log("game loaded successfully.");
+        }
+    }
+    
+    //delete entire save file
+    public void DeleteSaveFile()
+    {
+        //DO NOT CALL THIS FUNCTION IF NO SAVE FILE WAS CREATED, THE GAME WILL CRASH FRFR (and the game progress will be deleted)
+        string path = Path.Combine(Application.persistentDataPath, "playerSaveData.json");
+        File.Delete(path);
+    }
