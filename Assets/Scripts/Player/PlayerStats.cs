@@ -299,6 +299,7 @@ public class PlayerStats : MonoBehaviour
 
     // --- LOGIC: SAVE & LOAD (JSON) ---
     //save data
+    [ContextMenu("Jetzt Speichern")]
     public void SaveGame()
     {
         //convert struct to json
@@ -313,6 +314,7 @@ public class PlayerStats : MonoBehaviour
     }
 
     //load back data
+    [ContextMenu("Jetzt Laden")]
     public void LoadGame()
     {
         string path = Path.Combine(Application.persistentDataPath, "playerSaveData.json");
