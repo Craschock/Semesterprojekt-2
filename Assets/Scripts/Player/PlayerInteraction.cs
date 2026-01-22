@@ -41,6 +41,7 @@ public class PlayerInteraction : MonoBehaviour
     public PlayerLook playerLook;
     public GameObject uiPrompt;
     public HintUIManager hintUI;
+    public PlayerTools playerTools;               // perma player Tools 
 
     // internal smoothing & rotation state
     private Vector2 focusRotationOffset = Vector2.zero; // x = yaw, y = pitch
@@ -64,6 +65,8 @@ public class PlayerInteraction : MonoBehaviour
     private InputAction slot1Action;
     private InputAction slot2Action;
     private InputAction consumeAction;
+    private InputAction equipLighterAction;
+    private InputAction equipPhoneAction;
 
     private IInteractable currentInteractable;     // hit interactable (generic)
     private PickupInteractable heldItem;           // currently held item (null if none)
@@ -86,18 +89,25 @@ public class PlayerInteraction : MonoBehaviour
         // ------------------------------------------------------
         input.Player.Interact.performed += OnInteractPerformed;
 
-        focusAction = input.Player.Focus;
+        focusAction = input.Player.Focus;               // "F"
         rotateXAction = input.Player.RotateX;
         rotateYAction = input.Player.RotateY;
 
         
-        slot1Action = input.Player.Slot1;
-        slot2Action = input.Player.Slot2;
+        slot1Action = input.Player.Slot1;               // "1"
+        slot2Action = input.Player.Slot2;               // "2"
         slot1Action.performed += OnSlot1Performed;
         slot2Action.performed += OnSlot2Performed;
 
+        equipLighterAction = input.Player.EquipLighter; // "F"
+        equipPhoneAction = input.Player.EquipPhone;     // "Space"
+
+        if (equipLighterAction != null) equipLighterAction.performed += ctx => OnToggleLighter();
+        if (equipPhoneAction != null) equipPhoneAction.performed += ctx => OnTogglePhone();
+
         consumeAction = input.Player.Consume;
-        consumeAction.performed += OnConsumePerformed;
+        consumeAction.started += OnConsumeStarted;   // Hold
+        consumeAction.canceled += OnConsumeCanceled; // Let go (let it goooooo)
 
 
         // Enable Input System
@@ -107,6 +117,8 @@ public class PlayerInteraction : MonoBehaviour
         focusAction.Enable();
         rotateXAction.Enable();
         rotateYAction.Enable();
+        equipLighterAction.Enable();
+        equipPhoneAction.Enable();
 
         // compute held layer index (user must create this layer in editor)
         heldItemLayerIndex = LayerMask.NameToLayer(heldItemLayerName);
@@ -119,8 +131,8 @@ public class PlayerInteraction : MonoBehaviour
     }
 
     // Don't forget to Enable/Disable
-    private void OnEnable() => input.Player.Interact.Enable();
-    private void OnDisable() => input.Player.Interact.Disable();
+    private void OnEnable() => input.Player.Enable();
+    private void OnDisable() => input.Player.Disable();
 
     private void Start()
     {
@@ -198,6 +210,9 @@ public class PlayerInteraction : MonoBehaviour
                 isPreviewing = false;
                 previewSlot = null;
                 HidePrompt();
+
+                // Activate hands
+                if (playerStats != null) playerStats.SetHandsActive(true);
             }
             return;
         }
@@ -272,7 +287,8 @@ public class PlayerInteraction : MonoBehaviour
     {
         if (playerStats != null)
         {
-            playerStats.SelectSlot(0); // Select Slot 1 (Index 0)
+            if (playerTools != null) playerTools.ForceStopAllTools();
+            playerStats.SelectSlot(0); // Select Slot 1
         }
     }
 
@@ -280,7 +296,9 @@ public class PlayerInteraction : MonoBehaviour
     {
         if (playerStats != null)
         {
-            playerStats.SelectSlot(1); // Select Slot 2 (Index 1)
+            if (playerTools != null) playerTools.ForceStopAllTools();
+
+            playerStats.SelectSlot(1); // Select Slot 2
         }
     }
 
@@ -291,6 +309,61 @@ public class PlayerInteraction : MonoBehaviour
             playerStats.ConsumeSelectedSlot(); // Consume Consumable that is currently selected
         }
     }
+
+    private void OnToggleLighter()
+    {
+        if (playerStats != null)
+        {
+            if (playerTools != null) playerTools.ForceStopAllTools();
+            playerStats.ToggleLighterMode();
+        }
+    }
+
+    private void OnTogglePhone()
+    {
+        if (playerStats != null)
+        {
+            if (playerTools != null) playerTools.ForceStopAllTools();
+            playerStats.TogglePhoneMode();
+        }
+    }
+
+    private void OnConsumeStarted(InputAction.CallbackContext ctx)
+    {
+        if (playerStats == null) return;
+
+        // Debugging
+        Debug.Log($"[Interaction] Consume Started. Mode: {playerStats.currentMode}");
+
+        // IF Inventory Mode: Instant Consume
+        if (playerStats.currentMode == EquipmentMode.Inventory)
+        {
+            playerStats.ConsumeSelectedSlot();
+        }
+        // If Tool Mode: Use Tool
+        else
+        {
+            if (playerTools != null)
+            {
+                playerTools.SetToolState(true);
+            }
+            else
+            {
+                Debug.LogError("PlayerTools Referenz fehlt im PlayerInteraction Script!");
+            }
+        }
+    }
+
+    private void OnConsumeCanceled(InputAction.CallbackContext ctx)
+    {
+        // Only relevant in ToolMode (Lass endlich los)
+        if (playerStats != null && playerStats.currentMode != EquipmentMode.Inventory)
+        {
+            Debug.Log("[Interaction] Consume Released (Tool OFF)");
+            if (playerTools != null) playerTools.SetToolState(false);
+        }
+    }
+
     // --------------------------
     // Raycast and detect hit
     // --------------------------
@@ -681,6 +754,9 @@ public class PlayerInteraction : MonoBehaviour
     {
         if (item == null) return;
 
+        // Deactivate hands
+        if (playerStats != null) playerStats.SetHandsActive(false);
+
         heldItem = item;
         heldItem.SetHeld(true);
         lastHeldPosition = item.transform.position; // Init momentum
@@ -734,6 +810,9 @@ public class PlayerInteraction : MonoBehaviour
         heldItem.SetHeld(false);
         heldItem = null;
         ExitFocusMode();
+
+        // Activate hands
+        if (playerStats != null) playerStats.SetHandsActive(true);
     }
 
     // Cancel preview and bring held item back to hand
@@ -761,7 +840,7 @@ public class PlayerInteraction : MonoBehaviour
         bool success = playerStats.AddConsumable(Type);
         return success;
     }
-    
+
     // --------------------------
     // UI prompt helpers
     // --------------------------

@@ -98,8 +98,26 @@
                 },
                 {
                     "name": "Consume",
-                    "type": "Button",
+                    "type": "Value",
                     "id": "bf5c7b7d-ec71-4ec0-a67b-3290cac07f6f",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "EquipLighter",
+                    "type": "Button",
+                    "id": "93531a99-944a-4002-9b5e-75e05f557d94",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "EquipPhone",
+                    "type": "Button",
+                    "id": "05b2a3c0-f091-4fbb-8ab5-a2a8492e7467",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -368,6 +386,28 @@
                     "processors": "",
                     "groups": "",
                     "action": "Consume",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "09af4c6a-6563-4f6c-892c-1824fa410aad",
+                    "path": "<Keyboard>/f",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "EquipLighter",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "df512750-1991-454c-bea9-1201c0dfd147",
+                    "path": "<Keyboard>/space",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "EquipPhone",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

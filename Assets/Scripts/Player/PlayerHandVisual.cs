@@ -1,20 +1,22 @@
 using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
 
 public class PlayerHandVisuals : MonoBehaviour
 {
     [Header("Hand Transforms")]
-    [Tooltip("The empty GameObject child of the MainCamera positioned on the left.")]
     public Transform leftHandSlot;
-    [Tooltip("The empty GameObject child of the MainCamera positioned on the right.")]
     public Transform rightHandSlot;
 
     [Header("Highlight Settings")]
-    [Tooltip("How far the selected item moves relative to its start position.")]
     public Vector3 selectionOffset = new Vector3(-0.1f, 0.1f, 0.2f);
-    [Tooltip("If true, the X offset is inverted for the left hand (symmetry).")]
     public bool mirrorXForLeftHand = true;  //If Left Hand
     public float movementSmoothing = 10f;
+
+    [Header("Swap Animation")]
+    public float dropAmount = 0.5f;
+    public float swapSpeed = 8f;
+    public float swapDelay = 0.15f;
 
     [Header("Item Mappings")]
     [Tooltip("Map each ConsumableType to a specific Prefab here.")]
@@ -32,6 +34,8 @@ public class PlayerHandVisuals : MonoBehaviour
     private Vector3 leftStartPos;
     private Vector3 rightStartPos;
     private int currentSelectionIndex = -1;
+    private float currentDropOffset = 0f;
+    private float targetDropOffset = 0f;
 
     private void Awake()
     {
@@ -43,10 +47,7 @@ public class PlayerHandVisuals : MonoBehaviour
 
         if (stats != null)
         {
-            // Listen for Inventory changes (Updates meshes)
-            stats.OnInventoryChanged.AddListener(UpdateHandVisuals);
-
-            // Listen for Slot Selection (Updates positions)
+            stats.OnInventoryChanged.AddListener(OnInventoryChangedReceived);
             stats.OnSlotSelected.AddListener(OnSlotSelectionChanged);
         }
         else
@@ -57,6 +58,9 @@ public class PlayerHandVisuals : MonoBehaviour
 
     private void Update()
     {
+        // Lerp 'currentDropOffset' always to 'targetDropOffset'
+        currentDropOffset = Mathf.Lerp(currentDropOffset, targetDropOffset, Time.deltaTime * swapSpeed);
+
         // Smoothly animate hands to their target positions
         MoveHand(leftHandSlot, GetTargetPosition(0), Time.deltaTime * movementSmoothing);
         MoveHand(rightHandSlot, GetTargetPosition(1), Time.deltaTime * movementSmoothing);
@@ -65,6 +69,9 @@ public class PlayerHandVisuals : MonoBehaviour
     // Calculates where the hand SHOULD be based on selection
     private Vector3 GetTargetPosition(int handIndex)
     {
+        Vector3 basePos = (handIndex == 0) ? leftStartPos : rightStartPos;
+        Vector3 finalPos = basePos;
+
         // 0 = Left, 1 = Right
         if (handIndex == 0)
         {
@@ -73,16 +80,17 @@ public class PlayerHandVisuals : MonoBehaviour
             {
                 Vector3 finalOffset = selectionOffset;
                 if (mirrorXForLeftHand) finalOffset.x = -finalOffset.x; // Flip X for symmetry
-                return leftStartPos + finalOffset;
+                finalPos += finalOffset;
             }
-            return leftStartPos;
         }
         else
         {
             // If Right is selected, add offset.
-            if (currentSelectionIndex == 1) return rightStartPos + selectionOffset;
-            return rightStartPos;
+            if (currentSelectionIndex == 1) finalPos += selectionOffset;
         }
+        finalPos += Vector3.down * (currentDropOffset * dropAmount);
+
+        return finalPos;
     }
 
     private void MoveHand(Transform hand, Vector3 targetPos, float step)
@@ -97,13 +105,26 @@ public class PlayerHandVisuals : MonoBehaviour
         currentSelectionIndex = newIndex;
     }
 
-    // --- MESH SPAWNING LOGIC ---
-    public void UpdateHandVisuals(int slotIndex, ConsumableType newItemType)
+    public void OnInventoryChangedReceived(int slotIndex, ConsumableType newItemType)
+    {
+        StartCoroutine(SwapRoutine(slotIndex, newItemType));
+    }
+
+    private IEnumerator SwapRoutine(int slotIndex, ConsumableType newItemType)
+    {
+        targetDropOffset = 1f;
+        yield return new WaitForSeconds(swapDelay);
+        PerformMeshSwap(slotIndex, newItemType);
+        yield return new WaitForSeconds(0.05f);
+        targetDropOffset = 0f;
+    }
+
+    private void PerformMeshSwap(int slotIndex, ConsumableType newItemType)
     {
         Transform targetHand = (slotIndex == 0) ? leftHandSlot : rightHandSlot;
         if (targetHand == null) return;
 
-        // Delete old models
+        // delete old models
         foreach (Transform child in targetHand) Destroy(child.gameObject);
 
         if (newItemType == ConsumableType.None) return;
@@ -115,9 +136,9 @@ public class PlayerHandVisuals : MonoBehaviour
             newObj.transform.localPosition = Vector3.zero;
             newObj.transform.localRotation = Quaternion.identity;
 
-            // Fix layers recursively so they don't block camera raycasts if needed
-            // fp layer so that items render ontop of the environment
             int fpLayer = LayerMask.NameToLayer("FirstPerson");
+            if (fpLayer == -1) fpLayer = LayerMask.NameToLayer("Ignore Raycast");
+
             SetLayerRecursive(newObj, fpLayer);
         }
     }

@@ -2,6 +2,13 @@ using UnityEngine;
 using UnityEngine.Events;
 using System.IO;
 
+public enum EquipmentMode
+{
+    Inventory,
+    Lighter,
+    Phone
+}
+
 public class PlayerStats : MonoBehaviour
 {
     [Header("Configuration")]
@@ -14,6 +21,9 @@ public class PlayerStats : MonoBehaviour
     public bool regenerateStamina = true;
     public float staminaRegenRate = 15f;
     public float staminaDrainRate = 20f;
+
+    [Header("Equipment State")]
+    public EquipmentMode currentMode = EquipmentMode.Inventory;
 
     private bool areHandsActive = true;
 
@@ -100,6 +110,11 @@ public class PlayerStats : MonoBehaviour
 
     public void SelectSlot(int index)
     {
+        if (currentMode != EquipmentMode.Inventory)
+        {
+            SetMode(EquipmentMode.Inventory);
+        }
+
         if (selectedSlotIndex == index) // If same slot
         {
             selectedSlotIndex = -1; // Deselect
@@ -117,35 +132,42 @@ public class PlayerStats : MonoBehaviour
 
     public int GetSelectedSlotIndex() => selectedSlotIndex;
 
-    public void SetHandsActive(bool active)
+    public void ToggleLighterMode()
     {
-        areHandsActive = active;
+        // No swap if hands are deactivated
+        if (!areHandsActive) return;
 
-        if (active)
+        if (currentMode == EquipmentMode.Lighter)
         {
-            // �f active; Restore the visuals based on actual inventory
-
-            if (currentStats.inventory != null)
-            {
-                OnInventoryChanged?.Invoke(0, currentStats.inventory[0]);
-                OnInventoryChanged?.Invoke(1, currentStats.inventory[1]);
-            }
-            // Stelle sicher, dass die Position (Selection) auch wieder stimmt
-            OnSlotSelected?.Invoke(selectedSlotIndex);
-
-            Debug.Log("[PlayerStats] Hands Reactivated.");
+            SetMode(EquipmentMode.Inventory);
         }
         else
         {
-            // If not active: Fake empty inventory to visuals
-            OnInventoryChanged?.Invoke(0, ConsumableType.None);
-            OnInventoryChanged?.Invoke(1, ConsumableType.None);
-            OnSlotSelected?.Invoke(-1);
-
-            Debug.Log("[PlayerStats] Hands Deactivated (Hidden).");
+            SetMode(EquipmentMode.Lighter);
         }
     }
-    // Tries to add item. Returns true if successful, false if full.
+
+    public void TogglePhoneMode()
+    {
+        // No swap if hands are deactivated
+        if (!areHandsActive) return;
+
+        if (currentMode == EquipmentMode.Phone)
+        {
+            SetMode(EquipmentMode.Inventory);
+        }
+        else
+        {
+            SetMode(EquipmentMode.Phone);
+        }
+    }
+
+    public void SetMode(EquipmentMode newMode)
+    {
+        currentMode = newMode;
+        UpdateVisualsForCurrentMode();
+    }
+
     public bool AddConsumable(ConsumableType item)
     {
         // 1. Try to fill Slot 1 first if empty
@@ -181,7 +203,6 @@ public class PlayerStats : MonoBehaviour
         return false;
     }
 
-    // Returns the item in the currently selected slot and clears the slot
     public ConsumableType ConsumeSelectedSlot()
     {
         // If hands are deactivated, do nothing
@@ -211,6 +232,65 @@ public class PlayerStats : MonoBehaviour
         }
 
         return ConsumableType.None;
+    }
+
+    public void UpdateVisualsForCurrentMode()
+    {
+        // Safety
+        if (!areHandsActive)
+        {
+            OnInventoryChanged?.Invoke(0, ConsumableType.None);
+            OnInventoryChanged?.Invoke(1, ConsumableType.None);
+            OnSlotSelected?.Invoke(-1);
+            return;
+        }
+
+        switch (currentMode)
+        {
+            case EquipmentMode.Inventory:
+                // Show Normal Inventory
+                if (currentStats.inventory != null)
+                {
+                    OnInventoryChanged?.Invoke(0, currentStats.inventory[0]);
+                    OnInventoryChanged?.Invoke(1, currentStats.inventory[1]);
+                }
+                OnSlotSelected?.Invoke(selectedSlotIndex);
+                break;
+
+            case EquipmentMode.Lighter:
+                // Links leer, Rechts Feuerzeug (GlowItem)
+                OnInventoryChanged?.Invoke(0, ConsumableType.None);
+                OnInventoryChanged?.Invoke(1, ConsumableType.GlowItem);
+                OnSlotSelected?.Invoke(-1); // No SLot highlight
+                break;
+
+            case EquipmentMode.Phone:
+                // Links leer, Rechts Handy (SmallFearREductionItem)
+                OnInventoryChanged?.Invoke(0, ConsumableType.None);
+                OnInventoryChanged?.Invoke(1, ConsumableType.SmallFearReductionItem);
+                OnSlotSelected?.Invoke(-1); // No Slot highlight
+                break;
+        }
+    }
+
+    public void SetHandsActive(bool active)
+    {
+        areHandsActive = active;
+
+        if (active)
+        {
+            // Restore visual based on current mode (see method above)
+            UpdateVisualsForCurrentMode();
+            Debug.Log("[PlayerStats] Hands Reactivated.");
+        }
+        else
+        {
+            // Hide everything
+            OnInventoryChanged?.Invoke(0, ConsumableType.None);
+            OnInventoryChanged?.Invoke(1, ConsumableType.None);
+            OnSlotSelected?.Invoke(-1);
+            Debug.Log("[PlayerStats] Hands Deactivated (Hidden).");
+        }
     }
 
     // --- LOGIC: STAMINA ---

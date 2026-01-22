@@ -184,8 +184,26 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": ""Consume"",
-                    ""type"": ""Button"",
+                    ""type"": ""Value"",
                     ""id"": ""bf5c7b7d-ec71-4ec0-a67b-3290cac07f6f"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""EquipLighter"",
+                    ""type"": ""Button"",
+                    ""id"": ""93531a99-944a-4002-9b5e-75e05f557d94"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""EquipPhone"",
+                    ""type"": ""Button"",
+                    ""id"": ""05b2a3c0-f091-4fbb-8ab5-a2a8492e7467"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -456,6 +474,28 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""action"": ""Consume"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""09af4c6a-6563-4f6c-892c-1824fa410aad"",
+                    ""path"": ""<Keyboard>/f"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""EquipLighter"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""df512750-1991-454c-bea9-1201c0dfd147"",
+                    ""path"": ""<Keyboard>/space"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""EquipPhone"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -475,6 +515,8 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         m_Player_Slot1 = m_Player.FindAction("Slot1", throwIfNotFound: true);
         m_Player_Slot2 = m_Player.FindAction("Slot2", throwIfNotFound: true);
         m_Player_Consume = m_Player.FindAction("Consume", throwIfNotFound: true);
+        m_Player_EquipLighter = m_Player.FindAction("EquipLighter", throwIfNotFound: true);
+        m_Player_EquipPhone = m_Player.FindAction("EquipPhone", throwIfNotFound: true);
     }
 
     ~@PlayerControls()
@@ -566,6 +608,8 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Slot1;
     private readonly InputAction m_Player_Slot2;
     private readonly InputAction m_Player_Consume;
+    private readonly InputAction m_Player_EquipLighter;
+    private readonly InputAction m_Player_EquipPhone;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -621,6 +665,14 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/Consume".
         /// </summary>
         public InputAction @Consume => m_Wrapper.m_Player_Consume;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/EquipLighter".
+        /// </summary>
+        public InputAction @EquipLighter => m_Wrapper.m_Player_EquipLighter;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/EquipPhone".
+        /// </summary>
+        public InputAction @EquipPhone => m_Wrapper.m_Player_EquipPhone;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -680,6 +732,12 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @Consume.started += instance.OnConsume;
             @Consume.performed += instance.OnConsume;
             @Consume.canceled += instance.OnConsume;
+            @EquipLighter.started += instance.OnEquipLighter;
+            @EquipLighter.performed += instance.OnEquipLighter;
+            @EquipLighter.canceled += instance.OnEquipLighter;
+            @EquipPhone.started += instance.OnEquipPhone;
+            @EquipPhone.performed += instance.OnEquipPhone;
+            @EquipPhone.canceled += instance.OnEquipPhone;
         }
 
         /// <summary>
@@ -724,6 +782,12 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @Consume.started -= instance.OnConsume;
             @Consume.performed -= instance.OnConsume;
             @Consume.canceled -= instance.OnConsume;
+            @EquipLighter.started -= instance.OnEquipLighter;
+            @EquipLighter.performed -= instance.OnEquipLighter;
+            @EquipLighter.canceled -= instance.OnEquipLighter;
+            @EquipPhone.started -= instance.OnEquipPhone;
+            @EquipPhone.performed -= instance.OnEquipPhone;
+            @EquipPhone.canceled -= instance.OnEquipPhone;
         }
 
         /// <summary>
@@ -841,5 +905,19 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnConsume(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "EquipLighter" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnEquipLighter(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "EquipPhone" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnEquipPhone(InputAction.CallbackContext context);
     }
 }
