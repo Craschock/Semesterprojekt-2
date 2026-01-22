@@ -58,7 +58,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: a13ba86db54cd9d49aab9e99f7254117, type: 3}
       propertyPath: m_Name
-      value: Bambusbaum
+      value: LOD BambusBaum
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: a13ba86db54cd9d49aab9e99f7254117, type: 3}
       propertyPath: m_Layer
@@ -91,13 +91,13 @@ LODGroup:
   m_AnimateCrossFading: 0
   m_LastLODIsBillboard: 0
   m_LODs:
-  - screenRelativeHeight: 0.6
+  - screenRelativeHeight: 0.020879338
     fadeTransitionWidth: 0
-    renderers: []
-  - screenRelativeHeight: 0.3
-    fadeTransitionWidth: 0
-    renderers: []
-  - screenRelativeHeight: 0.1
-    fadeTransitionWidth: 0
-    renderers: []
+    renderers:
+    - renderer: {fileID: 4586583459109135985}
   m_Enabled: 1
+--- !u!23 &4586583459109135985 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: a13ba86db54cd9d49aab9e99f7254117, type: 3}
+  m_PrefabInstance: {fileID: 2911371529587751669}
+  m_PrefabAsset: {fileID: 0}

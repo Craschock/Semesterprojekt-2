@@ -14,7 +14,7 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 10
-  m_Fog: 0
+  m_Fog: 1
   m_FogColor: {r: 0.08235294, g: 0.09019608, b: 0.09411765, a: 1}
   m_FogMode: 3
   m_FogDensity: 0.1
@@ -4211,7 +4211,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 2147483647
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &48949804
 Transform:
   m_ObjectHideFlags: 0
@@ -139416,6 +139416,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerTools
   lighterLight: {fileID: 1134643964}
   lighterParticles: {fileID: 0}
+  minIntensity: 13
+  maxIntensity: 17
+  flickerSpeed: 10
   phoneScreenObject: {fileID: 0}
   phoneFaceLight: {fileID: 1942504083}
 --- !u!1001 &1593471709
