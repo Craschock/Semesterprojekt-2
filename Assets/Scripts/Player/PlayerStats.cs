@@ -38,6 +38,9 @@ public class PlayerStats : MonoBehaviour
         //location
         public Vector3 playerPosition;
 
+        //rotation
+        public Quaternion playerRotation;
+
         // --- Inventory Data ---
         public ConsumableType[] inventory; // Array of size 2
     }
@@ -289,6 +292,7 @@ public class PlayerStats : MonoBehaviour
     {
         currentStats = loadedData;
         transform.position = loadedData.playerPosition;
+        transform.rotation = loadedData.playerRotation;
         UpdateAllEvents();
     }
 
@@ -314,6 +318,8 @@ public class PlayerStats : MonoBehaviour
     {
         //capture position at time of saving (avoids constant saving, causing lag (maybe))
         currentStats.playerPosition = transform.position;
+        //same for rotation
+        currentStats.playerRotation = transform.rotation;
 
         //convert struct to json
         string json = JsonUtility.ToJson(currentStats, true);
