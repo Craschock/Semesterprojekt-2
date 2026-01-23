@@ -3,7 +3,7 @@ using UnityEngine.InputSystem;
 
 /// <summary>
 /// Handles player interaction:
-/// - pick up / drop items with MOMENTUM and COLLISION FIXES
+/// - pick up / drop items
 /// - preview placement on PlaceSlot
 /// - place items into PlaceSlot or take from it
 /// - disables rotation while previewing
@@ -42,6 +42,7 @@ public class PlayerInteraction : MonoBehaviour
     public GameObject uiPrompt;
     public HintUIManager hintUI;
     public PlayerTools playerTools;               // perma player Tools 
+    public PlayerHandVisuals handVisuals;
 
     // internal smoothing & rotation state
     private Vector2 focusRotationOffset = Vector2.zero; // x = yaw, y = pitch
@@ -351,16 +352,26 @@ public class PlayerInteraction : MonoBehaviour
             {
                 Debug.LogError("PlayerTools Referenz fehlt im PlayerInteraction Script!");
             }
+
+            // If phone, move closer
+            if (playerStats.currentMode == EquipmentMode.Phone && handVisuals != null)
+            {
+                handVisuals.SetPhoneWatchActive(true);
+            }
         }
     }
 
     private void OnConsumeCanceled(InputAction.CallbackContext ctx)
     {
-        // Only relevant in ToolMode (Lass endlich los)
         if (playerStats != null && playerStats.currentMode != EquipmentMode.Inventory)
         {
-            Debug.Log("[Interaction] Consume Released (Tool OFF)");
             if (playerTools != null) playerTools.SetToolState(false);
+
+            // NEU: Hand wieder runter
+            if (handVisuals != null)
+            {
+                handVisuals.SetPhoneWatchActive(false);
+            }
         }
     }
 
