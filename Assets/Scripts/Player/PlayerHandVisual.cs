@@ -14,12 +14,17 @@ public class PlayerHandVisuals : MonoBehaviour
     public float movementSmoothing = 10f;
 
     [Header("Swap Animation")]
-    public float dropAmount = 0.5f;
+    public float dropAmount = 1f;
     public float swapSpeed = 8f;
     public float swapDelay = 0.15f;
 
+    [Header("Phone Watch Settings")]
+    [Tooltip("Offset of the default position, when the player is right clicking.")]
+    public Vector3 phoneWatchOffset = new Vector3(-0.2f, 0.1f, 0.1f);
+    private bool isWatchingPhone = false;
+
     [Header("Item Mappings")]
-    [Tooltip("Map each ConsumableType to a specific Prefab here.")]
+    [Tooltip("Map each ConsumableType to a specific Prefab here please UwU.")]
     public List<ItemVisualMapping> itemMappings;
 
     // A simple struct to link the Enum to a Prefab in the Inspector
@@ -66,6 +71,11 @@ public class PlayerHandVisuals : MonoBehaviour
         MoveHand(rightHandSlot, GetTargetPosition(1), Time.deltaTime * movementSmoothing);
     }
 
+    public void SetPhoneWatchActive(bool active)
+    {
+        isWatchingPhone = active;
+    }
+
     // Calculates where the hand SHOULD be based on selection
     private Vector3 GetTargetPosition(int handIndex)
     {
@@ -85,8 +95,16 @@ public class PlayerHandVisuals : MonoBehaviour
         }
         else
         {
-            // If Right is selected, add offset.
-            if (currentSelectionIndex == 1) finalPos += selectionOffset;
+            // If Right is selected AND is watching phone, add phoneoffset .
+            if (isWatchingPhone)
+            {
+                finalPos += phoneWatchOffset;
+            }
+            // If Right is selected, addd normal offset.
+            else if (currentSelectionIndex == 1)
+            {
+                finalPos += selectionOffset;
+            }
         }
         finalPos += Vector3.down * (currentDropOffset * dropAmount);
 
