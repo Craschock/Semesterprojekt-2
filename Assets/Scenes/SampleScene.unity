@@ -7828,7 +7828,7 @@ Transform:
   m_GameObject: {fileID: 102311583}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -13.47282, y: 0.5, z: -48.794853}
+  m_LocalPosition: {x: 68.4, y: -2.87, z: -68.08}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -25276,6 +25276,7 @@ GameObject:
   - component: {fileID: 330585549}
   - component: {fileID: 330585550}
   - component: {fileID: 330585551}
+  - component: {fileID: 330585552}
   m_Layer: 3
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -25488,6 +25489,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioListener
   nonRigidbodyVelocity: 0
   attenuationObject: {fileID: 0}
+--- !u!114 &330585552
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 330585543}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.Volume
+  m_IsGlobal: 1
+  priority: 0
+  blendDistance: 0
+  weight: 1
+  sharedProfile: {fileID: 11400000, guid: 27227c343f5a5e64cbf947a0162c3975, type: 2}
 --- !u!1001 &330637813
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -139179,6 +139197,7 @@ GameObject:
   - component: {fileID: 1592984637}
   - component: {fileID: 1592984638}
   - component: {fileID: 1592984639}
+  - component: {fileID: 1592984640}
   m_Layer: 3
   m_Name: PlayerMesh
   m_TagString: Player
@@ -139421,6 +139440,21 @@ MonoBehaviour:
   flickerSpeed: 10
   phoneScreenObject: {fileID: 0}
   phoneFaceLight: {fileID: 1942504083}
+--- !u!114 &1592984640
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1592984629}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 093fefd6b646d694887a263c937292b0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CurseVisuals
+  volume: {fileID: 330585552}
+  activeIntensity: 0.55
+  smoothSpeed: 2
 --- !u!1001 &1593471709
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -158594,7 +158628,7 @@ Transform:
   m_GameObject: {fileID: 1826300767}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -30.02, y: -5.93, z: -44.560005}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

@@ -119,6 +119,10 @@ public class CursedObject : MonoBehaviour, IInteractable
         Vector3 dirToObject = visualCenter.position - playerMovement.transform.position;
         dirToObject.y = 0;
         playerMovement.SetMovementRestriction(dirToObject);
+
+        // Vignette on
+        if (CurseVisuals.Instance != null)
+            CurseVisuals.Instance.SetCurseActive(true);
     }
 
     private void LiftCurse()
@@ -127,5 +131,8 @@ public class CursedObject : MonoBehaviour, IInteractable
         {
             playerMovement.ClearMovementRestriction();
         }
+
+        if (CurseVisuals.Instance != null)
+            CurseVisuals.Instance.SetCurseActive(false);
     }
 }
