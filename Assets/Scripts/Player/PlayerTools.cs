@@ -16,6 +16,11 @@ public class PlayerTools : MonoBehaviour
     public float maxIntensity = 17f; // Maximale Helligkeit
     public float flickerSpeed = 10f;  // Wie schnell das Licht zappelt
 
+    [Header("Atmosphere Interaction")]
+    public FogController fogController;
+    [Tooltip("Strength of fog being dispersed")]
+    public float fogPushStrength = 0.05f;
+
     [Header("Phone Components")]
     [Tooltip("UI or light for the phone (Child of the MainCamera)")]
     public GameObject phoneScreenObject; // Light up display
@@ -23,8 +28,8 @@ public class PlayerTools : MonoBehaviour
 
     // References
     private PlayerStats playerStats;
-    private bool isLighterOn = false;
-    private bool isPhoneOn = false;
+    private bool isLighterOn = true;
+    private bool isPhoneOn = true;
 
     // Internal Flicker State
     private float randomOffset;
@@ -42,15 +47,18 @@ public class PlayerTools : MonoBehaviour
 
     private void Update()
     {
-        if (isPhoneOn && playerStats != null)
-        {
-            playerStats.ReduceFear(5f * Time.deltaTime);
-        }
-
-        if (isLighterOn && lighterLight != null)        // Perlin noise for flickering
+        if (isLighterOn && lighterLight != null)
         {
             float noise = Mathf.PerlinNoise((Time.time * flickerSpeed) + randomOffset, 0f);
             lighterLight.intensity = Mathf.Lerp(minIntensity, maxIntensity, noise);
+
+            if (fogController != null)
+            {
+                float baseFog = fogController.CurrentBaseDensity;
+                float flickerMod = noise * fogPushStrength;
+                float newFogDensity = Mathf.Max(0f, baseFog - flickerMod);
+                RenderSettings.fogDensity = newFogDensity;
+            }
         }
     }
 
@@ -87,10 +95,13 @@ public class PlayerTools : MonoBehaviour
 
     private void TurnOffLighter()
     {
-        isLighterOn = false;
+        if (!isLighterOn) return;
 
+        isLighterOn = false;
         if (lighterLight) lighterLight.enabled = false;
         if (lighterParticles) lighterParticles.Stop();
+        if (fogController != null) RenderSettings.fogDensity = fogController.CurrentBaseDensity;
+        
     }
 
     private void TurnOnPhone()
@@ -102,6 +113,8 @@ public class PlayerTools : MonoBehaviour
 
     private void TurnOffPhone()
     {
+        if (!isPhoneOn) return;
+
         isPhoneOn = false;
         if (phoneScreenObject) phoneScreenObject.SetActive(false);
         if (phoneFaceLight) phoneFaceLight.enabled = false;

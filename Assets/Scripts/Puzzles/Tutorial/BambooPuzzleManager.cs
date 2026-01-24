@@ -9,6 +9,8 @@ public class BambooPuzzleManager : MonoBehaviour
     public GameObject teleport;
     public bool puzzleCompleted = false;
 
+    [Header("References")]
+    public PlayerStats playerStats;
 
     private FogController fog;
 
@@ -42,6 +44,10 @@ public class BambooPuzzleManager : MonoBehaviour
 
         if (fog != null)
         {
+            //if (playerStats != null) 
+            //{
+            //    playerStats.bambooPuzzle = true;
+            //}
             fog.ClearFog();
         }
 

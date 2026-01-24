@@ -358,6 +358,17 @@
                 },
                 {
                     "name": "",
+                    "id": "d56921c5-e27f-4319-a37d-1857a60083af",
+                    "path": "<Keyboard>/ctrl",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Crouch",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "9a8a7079-43d7-4562-b5de-283f4550878c",
                     "path": "<Keyboard>/1",
                     "interactions": "",

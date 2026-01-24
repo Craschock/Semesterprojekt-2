@@ -82,6 +82,14 @@ public class PlayerStats : MonoBehaviour
     private void Start()
     {
         ResetStats();
+
+        if (PlayerPrefs.GetInt("LoadGameOnStart", 0) == 1)
+        {
+            Debug.Log("[PlayerStats] Loading Save Game from Menu selection...");
+            LoadGame();
+            PlayerPrefs.SetInt("LoadGameOnStart", 0);
+            PlayerPrefs.Save();
+        }
     }
 
     private void Update()
@@ -371,8 +379,14 @@ public class PlayerStats : MonoBehaviour
     public void LoadStatsData(PlayerData loadedData)
     {
         currentStats = loadedData;
+        CharacterController cc = GetComponent<CharacterController>();
+        if (cc != null) cc.enabled = false;
+
         transform.position = loadedData.playerPosition;
         transform.rotation = loadedData.playerRotation;
+
+        if (cc != null) cc.enabled = true;
+
         UpdateAllEvents();
     }
 

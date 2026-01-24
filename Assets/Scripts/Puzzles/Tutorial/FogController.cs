@@ -5,20 +5,27 @@ public class FogController : MonoBehaviour
 {
     [Header("Fog Settings")]
     [Tooltip("The density of visibility when the game starts.")]
-    public float initialFogDensity = 0.1f;
+    public float initialFogDensity = 0.4f;
 
     [Tooltip("The density of visibility after solving the puzzle.")]
-    public float clearedFogDensity = 0.05f;
+    public float clearedFogDensity = 0.15f;
 
     [Tooltip("How many seconds it takes for the fog to clear.")]
-    public float clearingDuration = 10f;
+    public float clearingDuration = 6.7f;
+
+    [Header("References")]
+    public PlayerStats playerStats;
+
+    public float CurrentBaseDensity { get; private set; }
 
     private void Start()
     {
         // force the fog settings on game start
         RenderSettings.fog = true;
         RenderSettings.fogMode = FogMode.ExponentialSquared;
-        RenderSettings.fogDensity = initialFogDensity;
+
+        CurrentBaseDensity = initialFogDensity;
+        RenderSettings.fogDensity = CurrentBaseDensity;
     }
 
     // Call this method when the puzzle is solved!
@@ -30,19 +37,17 @@ public class FogController : MonoBehaviour
 
     private IEnumerator ClearFogRoutine()
     {
-        float startDensity = RenderSettings.fogDensity;
+        float startDensity = CurrentBaseDensity;
         float timeElapsed = 0f;
 
         while (timeElapsed < clearingDuration)
         {
-            // Lerp moves the density smoothly from Initial (High) to Cleared (Low)
-            RenderSettings.fogDensity = Mathf.Lerp(startDensity, clearedFogDensity, timeElapsed / clearingDuration);
-
+            CurrentBaseDensity = Mathf.Lerp(startDensity, clearedFogDensity, timeElapsed / clearingDuration);
+            RenderSettings.fogDensity = CurrentBaseDensity;
             timeElapsed += Time.deltaTime;
-            yield return null; // Wait for next frame
+            yield return null;
         }
-
-        // Ensure we end exactly on the target density
-        RenderSettings.fogDensity = clearedFogDensity;
+        CurrentBaseDensity = clearedFogDensity;
+        RenderSettings.fogDensity = CurrentBaseDensity;
     }
 }

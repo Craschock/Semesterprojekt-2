@@ -35,14 +35,19 @@ public class PlayerInteraction : MonoBehaviour
     // The script AUTOMATICALLY removes 'Player' from this mask in Start()
     public LayerMask collisionMask;
 
-    [Header("References")]
-    public PlayerMovement playerMovement;
-    public PlayerStats playerStats;
+    [Header("References self")]
     public PlayerLook playerLook;
-    public GameObject uiPrompt;
-    public HintUIManager hintUI;
+    
+    [Header("Player References")]
     public PlayerTools playerTools;               // perma player Tools 
     public PlayerHandVisuals handVisuals;
+    public PlayerMovement playerMovement;
+    public PlayerStats playerStats;
+
+    [Header("UI References")]
+    public PhoneMinigame phoneMinigameUI;
+    public GameObject uiPrompt;
+    public HintUIManager hintUI;
 
     // internal smoothing & rotation state
     private Vector2 focusRotationOffset = Vector2.zero; // x = yaw, y = pitch
@@ -316,6 +321,8 @@ public class PlayerInteraction : MonoBehaviour
         if (playerStats != null)
         {
             if (playerTools != null) playerTools.ForceStopAllTools();
+            if (phoneMinigameUI != null) phoneMinigameUI.SetGameActive(false);
+            if (handVisuals != null) handVisuals.SetPhoneWatchActive(false);
             playerStats.ToggleLighterMode();
         }
     }
@@ -325,6 +332,8 @@ public class PlayerInteraction : MonoBehaviour
         if (playerStats != null)
         {
             if (playerTools != null) playerTools.ForceStopAllTools();
+            if (phoneMinigameUI != null) phoneMinigameUI.SetGameActive(false);
+            if (handVisuals != null) handVisuals.SetPhoneWatchActive(false);
             playerStats.TogglePhoneMode();
         }
     }
@@ -344,19 +353,17 @@ public class PlayerInteraction : MonoBehaviour
         // If Tool Mode: Use Tool
         else
         {
-            if (playerTools != null)
-            {
-                playerTools.SetToolState(true);
-            }
-            else
-            {
-                Debug.LogError("PlayerTools Referenz fehlt im PlayerInteraction Script!");
-            }
+            // Tool Mode
+            if (playerTools != null) playerTools.SetToolState(true);
 
-            // If phone, move closer
-            if (playerStats.currentMode == EquipmentMode.Phone && handVisuals != null)
+            // Phone Mode
+            if (playerStats.currentMode == EquipmentMode.Phone)
             {
-                handVisuals.SetPhoneWatchActive(true);
+                // Move Hand
+                if (handVisuals != null) handVisuals.SetPhoneWatchActive(true);
+
+                // Turn on minigame
+                if (phoneMinigameUI != null) phoneMinigameUI.SetGameActive(true);
             }
         }
     }
@@ -366,12 +373,8 @@ public class PlayerInteraction : MonoBehaviour
         if (playerStats != null && playerStats.currentMode != EquipmentMode.Inventory)
         {
             if (playerTools != null) playerTools.SetToolState(false);
-
-            // NEU: Hand wieder runter
-            if (handVisuals != null)
-            {
-                handVisuals.SetPhoneWatchActive(false);
-            }
+            if (handVisuals != null) handVisuals.SetPhoneWatchActive(false);
+            if (phoneMinigameUI != null) phoneMinigameUI.SetGameActive(false);
         }
     }
 
@@ -765,8 +768,11 @@ public class PlayerInteraction : MonoBehaviour
     {
         if (item == null) return;
 
-        // Deactivate hands
+        // Deactivate hands visuals
         if (playerStats != null) playerStats.SetHandsActive(false);
+        if (playerTools != null) playerTools.ForceStopAllTools();
+        if (phoneMinigameUI != null) phoneMinigameUI.SetGameActive(false);
+        if (handVisuals != null) handVisuals.SetPhoneWatchActive(false);
 
         heldItem = item;
         heldItem.SetHeld(true);
@@ -780,7 +786,6 @@ public class PlayerInteraction : MonoBehaviour
         }
 
         Collider itemCol = item.GetComponent<Collider>();
-
         // force ignore collision with HeldItem
         if (playerCollider != null && itemCol != null)
         {
@@ -847,6 +852,9 @@ public class PlayerInteraction : MonoBehaviour
     public Transform GetHeldItemTransform() => heldItem != null ? heldItem.transform : null;
 
     public bool TryPickUpConsumable(ConsumableType Type) {
+        if (playerTools != null) playerTools.ForceStopAllTools();
+        if (phoneMinigameUI != null) phoneMinigameUI.SetGameActive(false);
+        if (handVisuals != null) handVisuals.SetPhoneWatchActive(false);
         Debug.Log("Try picking up: " + Type);
         bool success = playerStats.AddConsumable(Type);
         return success;
