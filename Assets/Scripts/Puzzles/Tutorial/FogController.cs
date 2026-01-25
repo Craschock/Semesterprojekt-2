@@ -28,6 +28,7 @@ public class FogController : MonoBehaviour
         RenderSettings.fogDensity = CurrentBaseDensity;
     }
 
+    [ContextMenu("ClearFog")]
     // Call this method when the puzzle is solved!
     public void ClearFog()
     {

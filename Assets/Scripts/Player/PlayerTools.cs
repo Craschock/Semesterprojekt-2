@@ -18,8 +18,8 @@ public class PlayerTools : MonoBehaviour
 
     [Header("Atmosphere Interaction")]
     public FogController fogController;
-    [Tooltip("Strength of fog being dispersed")]
     public float fogPushStrength = 0.05f;
+    public float fogSoftFactor = 2.0f;
 
     [Header("Phone Components")]
     [Tooltip("UI or light for the phone (Child of the MainCamera)")]
@@ -56,8 +56,10 @@ public class PlayerTools : MonoBehaviour
             {
                 float baseFog = fogController.CurrentBaseDensity;
                 float flickerMod = noise * fogPushStrength;
-                float newFogDensity = Mathf.Max(0f, baseFog - flickerMod);
-                RenderSettings.fogDensity = newFogDensity;
+                float targetFogDensity = Mathf.Max(0f, baseFog - flickerMod);
+                float currentFog = RenderSettings.fogDensity;
+                float smoothedFog = Mathf.Lerp(currentFog, targetFogDensity, Time.deltaTime * fogSoftFactor);
+                RenderSettings.fogDensity = smoothedFog;
             }
         }
     }
