@@ -208,6 +208,15 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Pause"",
+                    ""type"": ""Button"",
+                    ""id"": ""de84d734-4e78-4817-878d-ff12f317f6cf"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -507,6 +516,17 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
                     ""action"": ""EquipPhone"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""99e23754-4625-461b-834d-af7845a57276"",
+                    ""path"": ""<Keyboard>/tab"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Pause"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -528,6 +548,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         m_Player_Consume = m_Player.FindAction("Consume", throwIfNotFound: true);
         m_Player_EquipLighter = m_Player.FindAction("EquipLighter", throwIfNotFound: true);
         m_Player_EquipPhone = m_Player.FindAction("EquipPhone", throwIfNotFound: true);
+        m_Player_Pause = m_Player.FindAction("Pause", throwIfNotFound: true);
     }
 
     ~@PlayerControls()
@@ -621,6 +642,7 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Consume;
     private readonly InputAction m_Player_EquipLighter;
     private readonly InputAction m_Player_EquipPhone;
+    private readonly InputAction m_Player_Pause;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -684,6 +706,10 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/EquipPhone".
         /// </summary>
         public InputAction @EquipPhone => m_Wrapper.m_Player_EquipPhone;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Pause".
+        /// </summary>
+        public InputAction @Pause => m_Wrapper.m_Player_Pause;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -749,6 +775,9 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @EquipPhone.started += instance.OnEquipPhone;
             @EquipPhone.performed += instance.OnEquipPhone;
             @EquipPhone.canceled += instance.OnEquipPhone;
+            @Pause.started += instance.OnPause;
+            @Pause.performed += instance.OnPause;
+            @Pause.canceled += instance.OnPause;
         }
 
         /// <summary>
@@ -799,6 +828,9 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
             @EquipPhone.started -= instance.OnEquipPhone;
             @EquipPhone.performed -= instance.OnEquipPhone;
             @EquipPhone.canceled -= instance.OnEquipPhone;
+            @Pause.started -= instance.OnPause;
+            @Pause.performed -= instance.OnPause;
+            @Pause.canceled -= instance.OnPause;
         }
 
         /// <summary>
@@ -930,5 +962,12 @@ public partial class @PlayerControls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnEquipPhone(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Pause" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnPause(InputAction.CallbackContext context);
     }
 }
