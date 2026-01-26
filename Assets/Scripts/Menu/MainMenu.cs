@@ -1,14 +1,20 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using System.IO;
-using UnityEngine.UI; 
+using UnityEngine.UI;
+using FMODUnity;
+using FMOD.Studio;
 
 public class MainMenu : MonoBehaviour
 {
+    [Header("FMOD Audio")]
+    public EventReference mainMenuMusic;
+
     [Header("References")]
     public Button continueButton;
 
     private string savePath;
+    private EventInstance musicInstance;
 
     private void Awake()
     {
@@ -18,6 +24,12 @@ public class MainMenu : MonoBehaviour
 
     private void Start()
     {
+        if (!mainMenuMusic.IsNull)
+        {
+            musicInstance = RuntimeManager.CreateInstance(mainMenuMusic);
+            musicInstance.start();
+        }
+
         // Does a savefile exist
         if (continueButton != null)
         {
@@ -58,6 +70,22 @@ public class MainMenu : MonoBehaviour
 
     private void LoadGameScene()
     {
+        if (musicInstance.isValid())
+        {
+            musicInstance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+            musicInstance.release();
+        }
+
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+    }
+
+    private void OnDestroy()
+    {
+        // Cleanup
+        if (musicInstance.isValid())
+        {
+            musicInstance.stop(FMOD.Studio.STOP_MODE.IMMEDIATE);
+            musicInstance.release();
+        }
     }
 }

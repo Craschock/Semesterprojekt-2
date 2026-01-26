@@ -1264,7 +1264,7 @@ GameObject:
   - component: {fileID: 18422386}
   m_Layer: 0
   m_Name: Stair (9)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -7619,6 +7619,13 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1
   curseSensorCollider: {fileID: 1645278552}
+  pickupSound:
+    Guid:
+      Data1: 745436059
+      Data2: 1332628120
+      Data3: 1205666722
+      Data4: 1683498689
+    Path: event:/PuzzleComplete
 --- !u!4 &102311586
 Transform:
   m_ObjectHideFlags: 0
@@ -7914,6 +7921,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16bba7fe1fde25f4ca823bc1f1bbf75c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlaceSlot
+  pickupSound:
+    Guid:
+      Data1: 1367557658
+      Data2: 1211587610
+      Data3: -1608945000
+      Data4: -1618705920
+    Path: event:/Bamboo
   previewPoint: {fileID: 332499406}
   slotPoint: {fileID: 332499406}
   allowPreviewRotation: 0
@@ -16287,6 +16301,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 326232967605405996, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
+      propertyPath: speed
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 326232967605405996, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
       propertyPath: patrolPoints.Array.size
       value: 25
       objectReference: {fileID: 0}
@@ -16518,10 +16536,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: shirime 2
       objectReference: {fileID: 0}
+    - target: {fileID: 5483744650050812210, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2887465487438140358, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 775978253}
   m_SourcePrefab: {fileID: 100100000, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
 --- !u!1 &212838195 stripped
 GameObject:
@@ -20961,6 +20986,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16bba7fe1fde25f4ca823bc1f1bbf75c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlaceSlot
+  pickupSound:
+    Guid:
+      Data1: 1367557658
+      Data2: 1211587610
+      Data3: -1608945000
+      Data4: -1618705920
+    Path: event:/Bamboo
   previewPoint: {fileID: 1630245876}
   slotPoint: {fileID: 1630245876}
   allowPreviewRotation: 0
@@ -26713,7 +26745,7 @@ GameObject:
   - component: {fileID: 333220471}
   m_Layer: 0
   m_Name: Raised FLoor
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -29054,6 +29086,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 326232967605405996, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
+      propertyPath: speed
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 326232967605405996, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
       propertyPath: patrolPoints.Array.size
       value: 31
       objectReference: {fileID: 0}
@@ -29225,10 +29261,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: shirime 3
       objectReference: {fileID: 0}
+    - target: {fileID: 5483744650050812210, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2887465487438140358, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 666492477}
   m_SourcePrefab: {fileID: 100100000, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
 --- !u!1 &366402179
 GameObject:
@@ -33059,6 +33102,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50629e0e6e79a324b8c8c81c6ae0c4b1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BambooPuzzleManager
+  puzzleCompleteSound:
+    Guid:
+      Data1: 745436059
+      Data2: 1332628120
+      Data3: 1205666722
+      Data4: 1683498689
+    Path: event:/PuzzleComplete
   slots:
   - {fileID: 268363180}
   - {fileID: 2060437946}
@@ -35138,7 +35188,7 @@ GameObject:
   - component: {fileID: 432912583}
   m_Layer: 0
   m_Name: Stair (1)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -38974,7 +39024,7 @@ PrefabInstance:
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 0}
+    m_TransformParent: {fileID: 2125227071}
     m_Modifications:
     - target: {fileID: -8722309300782254622, guid: 93103fd2a40f34d47919add3167492e8, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
@@ -38982,15 +39032,15 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: c5d82f3d38acea842893b7bb9695e8c2, type: 2}
     - target: {fileID: -8679921383154817045, guid: 93103fd2a40f34d47919add3167492e8, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 35
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 93103fd2a40f34d47919add3167492e8, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -3.26
+      value: 0.1400001
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 93103fd2a40f34d47919add3167492e8, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -80.1
+      value: 154.29999
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 93103fd2a40f34d47919add3167492e8, type: 3}
       propertyPath: m_LocalRotation.w
@@ -38998,15 +39048,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 93103fd2a40f34d47919add3167492e8, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 93103fd2a40f34d47919add3167492e8, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 93103fd2a40f34d47919add3167492e8, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 93103fd2a40f34d47919add3167492e8, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -41878,6 +41928,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16bba7fe1fde25f4ca823bc1f1bbf75c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlaceSlot
+  pickupSound:
+    Guid:
+      Data1: 1367557658
+      Data2: 1211587610
+      Data3: -1608945000
+      Data4: -1618705920
+    Path: event:/Bamboo
   previewPoint: {fileID: 914293578}
   slotPoint: {fileID: 914293578}
   allowPreviewRotation: 0
@@ -45325,6 +45382,20 @@ MonoBehaviour:
   - {fileID: 1606601828}
   - {fileID: 1680932580}
   - {fileID: 1650337874}
+  puzzleCompleteSound:
+    Guid:
+      Data1: 745436059
+      Data2: 1332628120
+      Data3: 1205666722
+      Data4: 1683498689
+    Path: event:/PuzzleComplete
+  puzzleFailSound:
+    Guid:
+      Data1: -1449564293
+      Data2: 1307556908
+      Data3: -1696998240
+      Data4: -1935131795
+    Path: event:/PuzzleFail
 --- !u!4 &533785960 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8623060599882794424, guid: 096787f030529b595b2b9fb91e931684, type: 3}
@@ -47643,7 +47714,7 @@ GameObject:
   - component: {fileID: 560579211}
   m_Layer: 0
   m_Name: Stair (3)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -48457,7 +48528,7 @@ GameObject:
   - component: {fileID: 570466526}
   m_Layer: 0
   m_Name: Stair (13)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -50020,7 +50091,7 @@ GameObject:
   - component: {fileID: 594927219}
   m_Layer: 0
   m_Name: Stair (11)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -50526,6 +50597,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StatueInteractable
   puzzleManager: {fileID: 533706844}
   activationVisuals: {fileID: 1463384860}
+  interactionSound:
+    Guid:
+      Data1: -175923297
+      Data2: 1169050658
+      Data3: 1124669078
+      Data4: 1318529396
+    Path: event:/StatueInteract
   showGazeDirection: 1
   gazeLength: 5
 --- !u!114 &599106809
@@ -54282,6 +54360,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d94645e3b7efd34591b9714805184ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupInteractable
+  pickupSound:
+    Guid:
+      Data1: 1367557658
+      Data2: 1211587610
+      Data3: -1608945000
+      Data4: -1618705920
+    Path: event:/Bamboo
   itemType: 1
 --- !u!65 &653129198
 BoxCollider:
@@ -55618,6 +55703,30 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e334e6614ad50f749b0a37528784c614, type: 3}
+--- !u!1 &666492470 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2887465487438140358, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
+  m_PrefabInstance: {fileID: 366372989}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &666492477
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 666492470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 11dda60492e13be4fb288db69bd42db3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyAudio
+  battleMusicEvent:
+    Guid:
+      Data1: -187597564
+      Data2: 1083287609
+      Data3: 877977009
+      Data4: 1328221715
+    Path: event:/Butteye BGM
 --- !u!1001 &666701226
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -56167,6 +56276,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d94645e3b7efd34591b9714805184ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupInteractable
+  pickupSound:
+    Guid:
+      Data1: 1367557658
+      Data2: 1211587610
+      Data3: -1608945000
+      Data4: -1618705920
+    Path: event:/Bamboo
   itemType: 3
 --- !u!65 &669619347
 BoxCollider:
@@ -65231,6 +65347,30 @@ MeshCollider:
   m_Convex: 1
   m_CookingOptions: 30
   m_Mesh: {fileID: 5841652331582360520, guid: 8cdb47ea7760a7644a64401e0e7a8b45, type: 3}
+--- !u!1 &775978246 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2887465487438140358, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
+  m_PrefabInstance: {fileID: 212374313}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &775978253
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 775978246}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 11dda60492e13be4fb288db69bd42db3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyAudio
+  battleMusicEvent:
+    Guid:
+      Data1: -187597564
+      Data2: 1083287609
+      Data3: 877977009
+      Data4: 1328221715
+    Path: event:/Butteye BGM
 --- !u!4 &776849213 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2121115777601841395, guid: e334e6614ad50f749b0a37528784c614, type: 3}
@@ -72015,7 +72155,7 @@ GameObject:
   - component: {fileID: 843478623}
   m_Layer: 0
   m_Name: Stair (12)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -72799,6 +72939,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ConsumableInteractable
   type: 9
+  pickupSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
 --- !u!65 &852785851
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -73150,6 +73297,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d94645e3b7efd34591b9714805184ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupInteractable
+  pickupSound:
+    Guid:
+      Data1: 1367557658
+      Data2: 1211587610
+      Data3: -1608945000
+      Data4: -1618705920
+    Path: event:/Bamboo
   itemType: 3
 --- !u!65 &854522453
 BoxCollider:
@@ -74883,7 +75037,7 @@ GameObject:
   - component: {fileID: 871347553}
   m_Layer: 0
   m_Name: Cube (3)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -79625,7 +79779,7 @@ GameObject:
   - component: {fileID: 922452034}
   m_Layer: 0
   m_Name: Stair (2)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -82240,7 +82394,7 @@ GameObject:
   - component: {fileID: 962808442}
   m_Layer: 0
   m_Name: Cube
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -86183,7 +86337,7 @@ GameObject:
   - component: {fileID: 1014556158}
   m_Layer: 0
   m_Name: Stair (8)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -87808,7 +87962,7 @@ GameObject:
   - component: {fileID: 1038245743}
   m_Layer: 0
   m_Name: Stair (7)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -89810,6 +89964,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WaterHutInteractable
   amount: 100
+  ambienceSound:
+    Guid:
+      Data1: 1354019366
+      Data2: 1260567544
+      Data3: 1975807667
+      Data4: -250778089
+    Path: event:/SFX_WaterHut_Ambience
+  interactSound:
+    Guid:
+      Data1: 727023639
+      Data2: 1314246530
+      Data3: -364624455
+      Data4: 65318894
+    Path: event:/HandWasserHuetteConsume
 --- !u!114 &1062964889
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -91534,6 +91702,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ConsumableInteractable
   type: 5
+  pickupSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
 --- !u!1001 &1083209671
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -93517,6 +93692,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 247e3d042e20e8b4a983273d3b959173, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PhoneMinigame
+  bgmEvent:
+    Guid:
+      Data1: 2110235120
+      Data2: 1175077451
+      Data3: 765509033
+      Data4: 301568509
+    Path: event:/GameBGM
+  hitSoundEvent:
+    Guid:
+      Data1: -22415638
+      Data2: 1206736497
+      Data3: -1709917822
+      Data4: -634789405
+    Path: event:/GameHit
+  missSoundEvent:
+    Guid:
+      Data1: -2046675547
+      Data2: 1313060205
+      Data3: -1719357821
+      Data4: 197736927
+    Path: event:/GameMiss
   needle: {fileID: 1746614976}
   successZone: {fileID: 545304083}
   baseRotationSpeed: 250
@@ -97863,7 +98059,7 @@ GameObject:
   - component: {fileID: 1151320285}
   m_Layer: 0
   m_Name: Cube (2)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -100415,6 +100611,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d94645e3b7efd34591b9714805184ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupInteractable
+  pickupSound:
+    Guid:
+      Data1: 1367557658
+      Data2: 1211587610
+      Data3: -1608945000
+      Data4: -1618705920
+    Path: event:/Bamboo
   itemType: 2
 --- !u!65 &1178884348
 BoxCollider:
@@ -101469,6 +101672,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ConsumableInteractable
   type: 14
+  pickupSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
 --- !u!65 &1192188995
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -108651,7 +108861,7 @@ Transform:
   m_GameObject: {fileID: 1276509710}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 16.56, y: 2.77, z: -30.89}
+  m_LocalPosition: {x: 16.56, y: 4.4, z: -30.89}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -108665,7 +108875,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1276509710}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
   m_Name: 
@@ -108673,11 +108883,11 @@ MonoBehaviour:
   CollisionTag: 
   EventReference:
     Guid:
-      Data1: -183031211
-      Data2: 1090137942
-      Data3: 805886344
-      Data4: 610893111
-    Path: event:/New Event
+      Data1: 74985610
+      Data2: 1169007192
+      Data3: -1334756724
+      Data4: -1971245797
+    Path: event:/Environment
   Event: 
   EventPlayTrigger: 1
   EventStopTrigger: 0
@@ -108730,7 +108940,7 @@ GameObject:
   - component: {fileID: 1276958916}
   m_Layer: 0
   m_Name: Stair (16)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -109883,7 +110093,7 @@ GameObject:
   - component: {fileID: 1297603349}
   m_Layer: 0
   m_Name: Stair (4)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -115575,7 +115785,7 @@ GameObject:
   - component: {fileID: 1310455545}
   m_Layer: 0
   m_Name: Cube (1)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -116378,7 +116588,7 @@ GameObject:
   - component: {fileID: 1318361619}
   m_Layer: 0
   m_Name: Stair
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -117682,7 +117892,7 @@ GameObject:
   - component: {fileID: 1330257499}
   m_Layer: 0
   m_Name: Stair (6)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -123371,7 +123581,7 @@ GameObject:
   - component: {fileID: 1383116756}
   m_Layer: 0
   m_Name: Stair (5)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -125205,6 +125415,30 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 8109e9e16ba4cc04b8e0928aea897927, type: 3}
+--- !u!1 &1408733528 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2887465487438140358, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
+  m_PrefabInstance: {fileID: 2010105116}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1408733535
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1408733528}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 11dda60492e13be4fb288db69bd42db3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyAudio
+  battleMusicEvent:
+    Guid:
+      Data1: -187597564
+      Data2: 1083287609
+      Data3: 877977009
+      Data4: 1328221715
+    Path: event:/Butteye BGM
 --- !u!4 &1408887980 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2121115777601841395, guid: e334e6614ad50f749b0a37528784c614, type: 3}
@@ -126732,7 +126966,7 @@ GameObject:
   - component: {fileID: 1436269637}
   m_Layer: 0
   m_Name: Stair (10)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -127844,6 +128078,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StatueInteractable
   puzzleManager: {fileID: 533706844}
   activationVisuals: {fileID: 99296294}
+  interactionSound:
+    Guid:
+      Data1: -175923297
+      Data2: 1169050658
+      Data3: 1124669078
+      Data4: 1318529396
+    Path: event:/StatueInteract
   showGazeDirection: 1
   gazeLength: 5
 --- !u!114 &1446155764
@@ -141142,6 +141383,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ConsumableInteractable
   type: 10
+  pickupSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
 --- !u!65 &1585750072
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -141701,6 +141949,7 @@ GameObject:
   - component: {fileID: 1592984638}
   - component: {fileID: 1592984639}
   - component: {fileID: 1592984640}
+  - component: {fileID: 1592984641}
   m_Layer: 3
   m_Name: PlayerMesh
   m_TagString: Player
@@ -141717,7 +141966,7 @@ Transform:
   m_GameObject: {fileID: 1592984629}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -141820,7 +142069,7 @@ CharacterController:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Height: 1
+  m_Height: 1.5
   m_Radius: 0.5
   m_SlopeLimit: 45
   m_StepOffset: 0.3
@@ -141839,6 +142088,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: efd3ad104587980478ae42fc52801b11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
+  staminaDepletedSound:
+    Guid:
+      Data1: -1418820805
+      Data2: 1130026466
+      Data3: 1875098029
+      Data4: 1585954812
+    Path: event:/StaminaEmpty
+  modeSwitchSound:
+    Guid:
+      Data1: -286632466
+      Data2: 1272211069
+      Data3: 1124543904
+      Data4: -1135783151
+    Path: event:/SFX_Mode_Switch
+  consumableSelectSound:
+    Guid:
+      Data1: 1529761869
+      Data2: 1113807500
+      Data3: 1977671598
+      Data4: 1952525543
+    Path: event:/SFX_Consumable_OnSelect
   maxHealth: 100
   maxStamina: 100
   maxFear: 100
@@ -141889,6 +142159,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6e4de9ef57b45e24891b7e82711dacc7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ConsumableOnConsume
+  consumeSound:
+    Guid:
+      Data1: -1906076888
+      Data2: 1304978784
+      Data3: -732590688
+      Data4: -710248436
+    Path: event:/SFX_Consumable_OnConsume
 --- !u!114 &1592984638
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -141937,6 +142214,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5e27699a350d12d439c8b2b965d14cb0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerTools
+  lighterLoopSound:
+    Guid:
+      Data1: 1874698948
+      Data2: 1341370470
+      Data3: 511174319
+      Data4: 1297459374
+    Path: event:/LighterIgnite
   lighterLight: {fileID: 1134643964}
   lighterParticles: {fileID: 0}
   minIntensity: 13
@@ -141962,6 +142246,29 @@ MonoBehaviour:
   volume: {fileID: 330585552}
   activeIntensity: 0.55
   smoothSpeed: 2
+--- !u!114 &1592984641
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1592984629}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3aeed40543d947f4395ec8e60d8f27f5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerFootsteps
+  footstepEvent:
+    Guid:
+      Data1: 338351434
+      Data2: 1322177664
+      Data3: 768176306
+      Data4: -2115672363
+    Path: event:/SFX_Footsteps
+  surfaceParameterName: Surface
+  stepDistance: 1.8
+  crouchMultiplier: 0.8
+  terrainLayerMapping: 0000000001000000020000000300000004000000
 --- !u!1001 &1593471709
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -143565,6 +143872,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StatueInteractable
   puzzleManager: {fileID: 533706844}
   activationVisuals: {fileID: 965780056}
+  interactionSound:
+    Guid:
+      Data1: -175923297
+      Data2: 1169050658
+      Data3: 1124669078
+      Data4: 1318529396
+    Path: event:/StatueInteract
   showGazeDirection: 1
   gazeLength: 5
 --- !u!114 &1606601829
@@ -147748,6 +148062,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StatueInteractable
   puzzleManager: {fileID: 533706844}
   activationVisuals: {fileID: 371758344}
+  interactionSound:
+    Guid:
+      Data1: -175923297
+      Data2: 1169050658
+      Data3: 1124669078
+      Data4: 1318529396
+    Path: event:/StatueInteract
   showGazeDirection: 1
   gazeLength: 5
 --- !u!114 &1650337875
@@ -148216,6 +148537,11 @@ Transform:
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 2ac7f960cb745694ebe0f986a8db830f, type: 3}
   m_PrefabInstance: {fileID: 60230738}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1659113317 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 93103fd2a40f34d47919add3167492e8, type: 3}
+  m_PrefabInstance: {fileID: 467680765}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &1659122718 stripped
 GameObject:
@@ -149029,7 +149355,7 @@ GameObject:
   - component: {fileID: 1668429043}
   m_Layer: 0
   m_Name: Stair (15)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -151189,6 +151515,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::StatueInteractable
   puzzleManager: {fileID: 533706844}
   activationVisuals: {fileID: 1416717762}
+  interactionSound:
+    Guid:
+      Data1: -175923297
+      Data2: 1169050658
+      Data3: 1124669078
+      Data4: 1318529396
+    Path: event:/StatueInteract
   showGazeDirection: 1
   gazeLength: 5
 --- !u!114 &1680932581
@@ -154602,6 +154935,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16bba7fe1fde25f4ca823bc1f1bbf75c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlaceSlot
+  pickupSound:
+    Guid:
+      Data1: 1367557658
+      Data2: 1211587610
+      Data3: -1608945000
+      Data4: -1618705920
+    Path: event:/Bamboo
   previewPoint: {fileID: 2014925511}
   slotPoint: {fileID: 2014925511}
   allowPreviewRotation: 0
@@ -159437,7 +159777,7 @@ GameObject:
   - component: {fileID: 1795421304}
   m_Layer: 0
   m_Name: Stair (14)
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -163599,6 +163939,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ConsumableInteractable
   type: 14
+  pickupSound:
+    Guid:
+      Data1: -1167402949
+      Data2: 1290416229
+      Data3: -48840262
+      Data4: -1109091159
+    Path: event:/ItemPickUp
 --- !u!65 &1838507767
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -173629,6 +173976,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8d94645e3b7efd34591b9714805184ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PickupInteractable
+  pickupSound:
+    Guid:
+      Data1: 1367557658
+      Data2: 1211587610
+      Data3: -1608945000
+      Data4: -1618705920
+    Path: event:/Bamboo
   itemType: 3
 --- !u!65 &1963901872
 BoxCollider:
@@ -177522,6 +177876,10 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 326232967605405996, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
+      propertyPath: speed
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 326232967605405996, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
       propertyPath: patrolPoints.Array.size
       value: 21
       objectReference: {fileID: 0}
@@ -177653,10 +178011,17 @@ PrefabInstance:
       propertyPath: m_Name
       value: shirime 1
       objectReference: {fileID: 0}
+    - target: {fileID: 5483744650050812210, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2887465487438140358, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1408733535}
   m_SourcePrefab: {fileID: 100100000, guid: 2efcceb92fe4f1a728f8206470f1e83d, type: 3}
 --- !u!4 &2010191641 stripped
 Transform:
@@ -179134,6 +179499,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ConsumableInteractable
   type: 6
+  pickupSound:
+    Guid:
+      Data1: 0
+      Data2: 0
+      Data3: 0
+      Data4: 0
+    Path: 
 --- !u!65 &2030287097
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -181464,6 +181836,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16bba7fe1fde25f4ca823bc1f1bbf75c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlaceSlot
+  pickupSound:
+    Guid:
+      Data1: 1367557658
+      Data2: 1211587610
+      Data3: -1608945000
+      Data4: -1618705920
+    Path: event:/Bamboo
   previewPoint: {fileID: 879028462}
   slotPoint: {fileID: 879028462}
   allowPreviewRotation: 0
@@ -186899,6 +187278,7 @@ Transform:
   - {fileID: 1281380828}
   - {fileID: 333220471}
   - {fileID: 556121634}
+  - {fileID: 1659113317}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &2125572826 stripped
@@ -200089,6 +200469,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ConsumableInteractable
   type: 10
+  pickupSound:
+    Guid:
+      Data1: -1167402949
+      Data2: 1290416229
+      Data3: -48840262
+      Data4: -1109091159
+    Path: event:/ItemPickUp
 --- !u!65 &919132149355054633
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -206394,7 +206781,7 @@ GameObject:
   - component: {fileID: 9009882647160522095}
   m_Layer: 0
   m_Name: Treppe1.001
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 2147483647
@@ -219913,7 +220300,7 @@ GameObject:
   - component: {fileID: 3476242184227657686}
   m_Layer: 0
   m_Name: Treppe1
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 2147483647
@@ -226879,7 +227266,7 @@ GameObject:
   - component: {fileID: 8703627252708298906}
   m_Layer: 0
   m_Name: TreppeSeite2.002
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 2147483647
@@ -233818,7 +234205,7 @@ GameObject:
   - component: {fileID: 5620571664337036279}
   m_Layer: 0
   m_Name: Treppe2.002
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 2147483647
@@ -236973,7 +237360,7 @@ GameObject:
   - component: {fileID: 6506152734581082129}
   m_Layer: 0
   m_Name: TreppeSeite1
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 2147483647
@@ -245777,7 +246164,7 @@ GameObject:
   - component: {fileID: 5212220127487028805}
   m_Layer: 0
   m_Name: Stairs
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 2147483647
@@ -254671,7 +255058,7 @@ GameObject:
   - component: {fileID: 6412303469862923500}
   m_Layer: 0
   m_Name: Mirror2.002
-  m_TagString: Untagged
+  m_TagString: Wood
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -267170,7 +267557,7 @@ GameObject:
   - component: {fileID: 6594028236563156126}
   m_Layer: 0
   m_Name: TreppeSeite2.001
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 2147483647
@@ -283060,7 +283447,7 @@ GameObject:
   - component: {fileID: 7793481602442080494}
   m_Layer: 0
   m_Name: TreppeSeite1.001
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 2147483647
@@ -291283,7 +291670,7 @@ GameObject:
   - component: {fileID: 9202452613803838692}
   m_Layer: 0
   m_Name: Treppe2.001
-  m_TagString: Untagged
+  m_TagString: Stone
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 2147483647
@@ -300417,4 +300804,3 @@ SceneRoots:
   - {fileID: 1758614087}
   - {fileID: 366372989}
   - {fileID: 1606441251}
-  - {fileID: 467680765}

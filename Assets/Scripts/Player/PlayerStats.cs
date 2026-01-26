@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.Events;
 using System.IO;
+using FMODUnity;
+using FMOD.Studio;
 
 public enum EquipmentMode
 {
@@ -11,6 +13,14 @@ public enum EquipmentMode
 
 public class PlayerStats : MonoBehaviour
 {
+    [Header("FMOD Audio")]
+    public EventReference staminaDepletedSound;
+    public EventReference modeSwitchSound;
+    public EventReference consumableSelectSound;
+    private bool hasPlayedStaminaEmptySound = false;
+
+    private EventInstance currentSelectionSoundInstance;
+
     [Header("Configuration")]
     public float maxHealth = 100f;
     public float maxStamina = 100f;
@@ -123,18 +133,27 @@ public class PlayerStats : MonoBehaviour
             SetMode(EquipmentMode.Inventory);
         }
 
-        if (selectedSlotIndex == index) // If same slot
+        StopSelectionSound();
+
+        if (selectedSlotIndex == index) // Deselect
         {
-            selectedSlotIndex = -1; // Deselect
+            selectedSlotIndex = -1; 
             Debug.Log($"[PlayerStats] Deselected Slot {index + 1}");
         }
         else
         {
             selectedSlotIndex = index; // Select new
             Debug.Log($"[PlayerStats] Selected Slot {index + 1}. Item: {currentStats.inventory[index]}");
+            
+            ConsumableType itemInSlot = currentStats.inventory[index];
+            
+            if (itemInSlot != ConsumableType.None && 
+                itemInSlot != ConsumableType.GlowItem && 
+                itemInSlot != ConsumableType.SmallFearReductionItem)
+            {
+                PlaySelectionSound(itemInSlot);
+            }
         }
-
-        // We pass -1 if nothing is selected
         OnSlotSelected?.Invoke(selectedSlotIndex);
     }
 
@@ -172,37 +191,45 @@ public class PlayerStats : MonoBehaviour
 
     public void SetMode(EquipmentMode newMode)
     {
+        if (currentMode == newMode) return;
+
+        StopSelectionSound();
+
         currentMode = newMode;
+
+        if (!modeSwitchSound.IsNull)
+        {
+            RuntimeManager.PlayOneShot(modeSwitchSound);
+        }
+
         UpdateVisualsForCurrentMode();
     }
 
     public bool AddConsumable(ConsumableType item)
     {
-        // 1. Try to fill Slot 1 first if empty
+        // Try to fill Slot 1 first if empty
         if (currentStats.inventory[0] == ConsumableType.None)
         {
             currentStats.inventory[0] = item;
             Debug.Log($"[PlayerStats] Added {item} to Slot 1");
             OnInventoryChanged?.Invoke(0, item);
 
-            // --- AUTO SELECT SLOT 1 ---
+            // Auto select slot 1
             selectedSlotIndex = 0;
             OnSlotSelected?.Invoke(selectedSlotIndex);
-            // --------------------------
 
             return true;
         }
-        // 2. Try to fill Slot 2 if empty
+        // Try to fill Slot 2 if empty
         else if (currentStats.inventory[1] == ConsumableType.None)
         {
             currentStats.inventory[1] = item;
             Debug.Log($"[PlayerStats] Added {item} to Slot 2");
             OnInventoryChanged?.Invoke(1, item);
 
-            // --- AUTO SELECT SLOT 2 ---
+            // Auto select slot 2
             selectedSlotIndex = 1;
             OnSlotSelected?.Invoke(selectedSlotIndex);
-            // --------------------------
 
             return true;
         }
@@ -223,6 +250,8 @@ public class PlayerStats : MonoBehaviour
 
         if (item != ConsumableType.None)
         {
+            StopSelectionSound();
+
             if (effectHandler != null)
             {
                 effectHandler.ApplyEffect(item);
@@ -240,6 +269,23 @@ public class PlayerStats : MonoBehaviour
         }
 
         return ConsumableType.None;
+    }
+
+    private void PlaySelectionSound(ConsumableType type)
+    {
+        if (consumableSelectSound.IsNull) return;
+        currentSelectionSoundInstance = RuntimeManager.CreateInstance(consumableSelectSound);
+        currentSelectionSoundInstance.setParameterByNameWithLabel("ItemType", type.ToString());
+        currentSelectionSoundInstance.start();
+    }
+
+    private void StopSelectionSound()
+    {
+        if (currentSelectionSoundInstance.isValid())
+        {
+            currentSelectionSoundInstance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+            currentSelectionSoundInstance.release();
+        }
     }
 
     public void UpdateVisualsForCurrentMode()
@@ -309,6 +355,10 @@ public class PlayerStats : MonoBehaviour
             currentStats.stamina += staminaRegenRate * Time.deltaTime;
             currentStats.stamina = Mathf.Clamp(currentStats.stamina, 0, maxStamina);
         }
+        if (currentStats.stamina > 5f)
+        {
+            hasPlayedStaminaEmptySound = false;
+        }
     }
 
     public bool HasStamina(float amount) => currentStats.stamina >= amount;
@@ -316,8 +366,18 @@ public class PlayerStats : MonoBehaviour
     public void UseStamina(float amount)
     {
         currentStats.stamina -= amount;
-        currentStats.stamina = Mathf.Clamp(currentStats.stamina, 0, maxStamina);
-        regenerateStamina = false;
+        if (currentStats.stamina <= 0)
+        {
+            currentStats.stamina = 0;
+            if (!hasPlayedStaminaEmptySound)
+            {
+                if (!staminaDepletedSound.IsNull)
+                {
+                    RuntimeManager.PlayOneShot(staminaDepletedSound);
+                }
+                hasPlayedStaminaEmptySound = true;
+            }
+        }
     }
 
     public void StartStaminaRegen() => regenerateStamina = true;

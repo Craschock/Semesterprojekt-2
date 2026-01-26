@@ -2,9 +2,16 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
 using System.Collections;
+using FMODUnity;
+using FMOD.Studio;
 
 public class PhoneMinigame : MonoBehaviour
 {
+    [Header("FMOD Audio")]
+    public EventReference bgmEvent;
+    public EventReference hitSoundEvent;
+    public EventReference missSoundEvent;
+
     [Header("UI References")]
     [Tooltip("Die Nadel")]
     public RectTransform needle;
@@ -44,6 +51,8 @@ public class PhoneMinigame : MonoBehaviour
     private float currentDirection = 1f;
     private bool isInputLocked = false;
 
+    private EventInstance bgmInstance;
+
     private void Start()
     {
         gameObject.SetActive(false);
@@ -55,6 +64,12 @@ public class PhoneMinigame : MonoBehaviour
         currentDirection = (Random.value > 0.5f) ? 1f : -1f;
         StartNewRound();
         isInputLocked = false;
+        StartMusic();
+    }
+
+    private void OnDisable()
+    {
+        StopMusic();
     }
 
     private void Update()
@@ -76,6 +91,24 @@ public class PhoneMinigame : MonoBehaviour
     {
         if (active == gameObject.activeSelf) return;
         gameObject.SetActive(active);
+    }
+
+    private void StartMusic()
+    {
+        if (!bgmEvent.IsNull)
+        {
+            bgmInstance = RuntimeManager.CreateInstance(bgmEvent);
+            bgmInstance.start();
+        }
+    }
+
+    private void StopMusic()
+    {
+        if (bgmInstance.isValid())
+        {
+            bgmInstance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+            bgmInstance.release();
+        }
     }
 
     private void ResetDifficulty()
@@ -124,7 +157,9 @@ public class PhoneMinigame : MonoBehaviour
 
     private void OnSuccess()
     {
-        Debug.Log($"Minigame HIT!");
+        if (!hitSoundEvent.IsNull)
+            RuntimeManager.PlayOneShot(hitSoundEvent);
+
         if (stats != null) stats.ReduceFear(fearReduction);
 
         // Ramp Up
@@ -139,6 +174,9 @@ public class PhoneMinigame : MonoBehaviour
 
     private IEnumerator FailRoutine()
     {
+        if (!missSoundEvent.IsNull)
+            RuntimeManager.PlayOneShot(missSoundEvent);
+
         isInputLocked = true;
 
         if (stats != null) stats.AddFear(fearPenalty);

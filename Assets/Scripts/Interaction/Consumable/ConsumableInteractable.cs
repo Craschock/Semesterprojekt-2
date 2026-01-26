@@ -1,4 +1,5 @@
 using UnityEngine;
+using FMODUnity;
 
 /// <summary>
 /// A world-space consumable (item) the player can interact with.
@@ -10,7 +11,9 @@ public class ConsumableInteractable : MonoBehaviour, IInteractable
     [Header("Item Settings")]
     public ConsumableType type;
 
-    // Reference to the outline script
+    [Header("FMOD Audio")]
+    public EventReference pickupSound;
+
     private OutlineController outline;
 
     private void Awake()
@@ -20,23 +23,27 @@ public class ConsumableInteractable : MonoBehaviour, IInteractable
 
     public void OnInteract(PlayerInteraction interactor)
     {
-        // Logic is handled by PlayerInteraction calling PlayerStats, 
         bool wasPickedUp = interactor.TryPickUpConsumable(this.type);
 
         if (wasPickedUp)
         {
+            if (!pickupSound.IsNull)
+            {
+                RuntimeManager.PlayOneShot(pickupSound, transform.position);
+            }
+
             gameObject.SetActive(false);
         }
         else
         {
             Debug.Log("Inventory full");
+            // "Error"-Sound maybe
         }
     }
 
     public void OnFocus()
     {
         if (outline != null) outline.SetToHighlight();
-
     }
 
     public void OnLoseFocus()

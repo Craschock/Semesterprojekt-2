@@ -1,4 +1,5 @@
 using UnityEngine;
+using FMODUnity;
 
 [RequireComponent(typeof(OutlineController))]
 public class CursedObject : MonoBehaviour, IInteractable
@@ -7,6 +8,9 @@ public class CursedObject : MonoBehaviour, IInteractable
     public Transform visualCenter;
     public LayerMask obstructionMask;
     public Collider curseSensorCollider;
+
+    [Header("FMOD Audio")]
+    public EventReference pickupSound;
 
     // References
     private OutlineController outline;
@@ -37,6 +41,11 @@ public class CursedObject : MonoBehaviour, IInteractable
     public void OnInteract(PlayerInteraction interactor)
     {
         Debug.Log("(Picked up Object) - Cursed Object Obtained!");
+
+        if (!pickupSound.IsNull)
+        {
+            RuntimeManager.PlayOneShot(pickupSound);
+        }
 
         // Check cursed object in playerstats please
 
@@ -127,7 +136,7 @@ public class CursedObject : MonoBehaviour, IInteractable
 
     private void LiftCurse()
     {
-        if (playerMovement != null) 
+        if (playerMovement != null)
         {
             playerMovement.ClearMovementRestriction();
         }

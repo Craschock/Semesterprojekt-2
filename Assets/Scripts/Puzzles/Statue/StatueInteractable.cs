@@ -1,4 +1,5 @@
 using UnityEngine;
+using FMODUnity;
 
 /// <summary>
 /// - A single statue in the puzzle.
@@ -10,10 +11,12 @@ public class StatueInteractable : MonoBehaviour, IInteractable
     [Header("Puzzle References")]
     public StatuePuzzleManager puzzleManager;
 
-    //Also lowkey licht oder so
     [Header("Visual Feedback")]
     public GameObject activationVisuals;
-    
+
+    [Header("FMOD Audio")]
+    public EventReference interactionSound;
+
 
     [Header("Debug / Level Design")]
     public bool showGazeDirection = true;
@@ -35,8 +38,11 @@ public class StatueInteractable : MonoBehaviour, IInteractable
 
     public void OnInteract(PlayerInteraction interactor)
     {
-        // 1. Block interaction if already done
         if (isActivated) return;
+        if (!interactionSound.IsNull)
+        {
+            RuntimeManager.PlayOneShot(interactionSound, transform.position);
+        }
 
         if (puzzleManager == null)
         {
@@ -94,7 +100,6 @@ public class StatueInteractable : MonoBehaviour, IInteractable
 
     public bool IsActivated() => isActivated;
 
-    // --- Editor Helper ---
     private void SetLayerRecursive(GameObject obj, int layer)
     {
         // Don't change the "Ignore Raycast" layer (Sensor) if it exists

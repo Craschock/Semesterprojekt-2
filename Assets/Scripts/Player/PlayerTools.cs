@@ -1,10 +1,17 @@
 using UnityEngine;
+using FMODUnity;
+using FMOD.Studio;
 
 /// <summary>
 /// Controls the logic and effects for the lighter and the phone
 /// </summary>
 public class PlayerTools : MonoBehaviour
 {
+    [Header("FMOD Audio")]
+    public EventReference lighterLoopSound;
+
+    private EventInstance lighterInstance;
+
     [Header("Lighter Components")]
     [Tooltip("Light that turns on (Child of the MainCamera)")]
     public Light lighterLight;
@@ -43,6 +50,11 @@ public class PlayerTools : MonoBehaviour
     private void Start()
     {
         ForceStopAllTools();
+    }
+
+    private void OnDisable()
+    {
+        StopLighterAudio();
     }
 
     private void Update()
@@ -91,6 +103,12 @@ public class PlayerTools : MonoBehaviour
         if (isLighterOn) return;
         isLighterOn = true;
 
+        if (!lighterLoopSound.IsNull)
+        {
+            lighterInstance = RuntimeManager.CreateInstance(lighterLoopSound);
+            lighterInstance.start();
+        }
+
         if (lighterLight) lighterLight.enabled = true;
         if (lighterParticles) lighterParticles.Play();
     }
@@ -100,10 +118,21 @@ public class PlayerTools : MonoBehaviour
         if (!isLighterOn) return;
 
         isLighterOn = false;
+
+        StopLighterAudio();
+
         if (lighterLight) lighterLight.enabled = false;
         if (lighterParticles) lighterParticles.Stop();
         if (fogController != null) RenderSettings.fogDensity = fogController.CurrentBaseDensity;
-        
+    }
+
+    private void StopLighterAudio()
+    {
+        if (lighterInstance.isValid())
+        {
+            lighterInstance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+            lighterInstance.release();
+        }
     }
 
     private void TurnOnPhone()

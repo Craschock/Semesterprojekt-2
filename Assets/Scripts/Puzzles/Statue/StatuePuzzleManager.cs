@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using FMODUnity;
 
 /// <summary>
 /// Manages the order and logic for the Statue Puzzle.
@@ -12,10 +13,14 @@ public class StatuePuzzleManager : MonoBehaviour
     [Tooltip("Drag the Statues here IN THE CORRECT ORDER (1st to last).")]
     public List<StatueInteractable> correctSequence;
 
+    [Header("FMOD Audio")]
+    public EventReference puzzleCompleteSound;
+    public EventReference puzzleFailSound;
+
     // State
     private int currentIndex = 0;
     private bool isPuzzleComplete = false;
-  
+
     public void OnStatueInteracted(StatueInteractable statue)
     {
         if (isPuzzleComplete)
@@ -71,6 +76,11 @@ public class StatuePuzzleManager : MonoBehaviour
     {
         Debug.Log("[StatuePuzzleManager] WRONG STATUE! Resetting puzzle.");
 
+        if (!puzzleFailSound.IsNull)
+        {
+            RuntimeManager.PlayOneShot(puzzleFailSound, transform.position);
+        }
+
         // Reset all statues visuals
         foreach (var s in correctSequence)
         {
@@ -87,6 +97,11 @@ public class StatuePuzzleManager : MonoBehaviour
     {
         isPuzzleComplete = true;
         Debug.Log("[StatuePuzzleManager] PUZZLE SOLVED!");
+
+        if (!puzzleCompleteSound.IsNull)
+        {
+            RuntimeManager.PlayOneShot(puzzleCompleteSound, transform.position);
+        }
 
         //What will happen? o.O
     }

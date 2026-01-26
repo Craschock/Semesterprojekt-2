@@ -1,4 +1,5 @@
 using UnityEngine;
+using FMODUnity;
 
 /// <summary>
 /// Pick-up-able item. Works with PlayerInteraction for pickup/place.
@@ -6,15 +7,18 @@ using UnityEngine;
 /// - OutlineController located on a child mesh (it will be found automatically)
 /// - Proper layer syncing by asking the OutlineController to set layers recursively
 /// </summary>
+[RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(OutlineController))]
 public class PickupInteractable : MonoBehaviour, IInteractable
 {
+    [Header("FMOD Audio")]
+    public EventReference pickupSound;
+
     public bool IsHeld { get; private set; } = false;
     public bool IsSlotted { get; private set; } = false;
 
     // type used by puzzle system (set in inspector)
     public ItemType itemType = ItemType.None;
-
     // OutlineController may live on a child mesh
     private OutlineController outline;
 
@@ -41,6 +45,11 @@ public class PickupInteractable : MonoBehaviour, IInteractable
     // called when player presses interact (E)
     public void OnInteract(PlayerInteraction interactor)
     {
+        if (!pickupSound.IsNull)
+        {
+            RuntimeManager.PlayOneShot(pickupSound, transform.position);
+        }
+
         // if the item is slotted, normal pickup is not allowed via OnInteract.
         if (IsSlotted)
             return;

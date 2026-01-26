@@ -1,7 +1,12 @@
 using UnityEngine;
+using FMODUnity;
+using FMOD.Studio;
 
 public class ConsumableOnConsume : MonoBehaviour
 {
+    [Header("FMOD Audio")]
+    public EventReference consumeSound;
+
     private PlayerStats stats;
 
     private void Awake()
@@ -12,6 +17,11 @@ public class ConsumableOnConsume : MonoBehaviour
     public void ApplyEffect(ConsumableType type)
     {
         Debug.Log($"[Consumable] Consuming item: {type}");
+
+        if (type != ConsumableType.GlowItem && type != ConsumableType.SmallFearReductionItem && type != ConsumableType.None)
+        {
+            PlaySoundWithParam(consumeSound, type);
+        }
 
         switch (type)
         {
@@ -51,5 +61,16 @@ public class ConsumableOnConsume : MonoBehaviour
             case ConsumableType.EnemyStunItem:
                 break;
         }
+    }
+
+
+    private void PlaySoundWithParam(EventReference eventRef, ConsumableType type)
+    {
+        if (eventRef.IsNull) return;
+
+        EventInstance instance = RuntimeManager.CreateInstance(eventRef);
+        instance.setParameterByNameWithLabel("ItemType", type.ToString());
+        instance.start();
+        instance.release();
     }
 }

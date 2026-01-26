@@ -1,4 +1,5 @@
 using UnityEngine;
+using FMODUnity;
 
 /// <summary>
 /// Slot that can accept a PickupInteractable (placeable item).
@@ -8,6 +9,9 @@ using UnityEngine;
 /// </summary>
 public class PlaceSlot : MonoBehaviour, IInteractable
 {
+    [Header("FMOD Audio")]
+    public EventReference pickupSound;
+
     [Header("Slot Transforms")]
     public Transform previewPoint;  // visual preview transform (position+rotation)
     public Transform slotPoint;     // final locked transform when item is placed
@@ -82,6 +86,10 @@ public class PlaceSlot : MonoBehaviour, IInteractable
     // the item will be snapped to slotPoint, made kinematic, and registered as placed
     public void PlaceItem(PickupInteractable item)
     {
+        {
+            RuntimeManager.PlayOneShot(pickupSound, transform.position);
+        }
+
         if (item == null || slotPoint == null) return;
 
         // detach from player (pickup system does unparenting already)
@@ -117,6 +125,10 @@ public class PlaceSlot : MonoBehaviour, IInteractable
     // remove currently placed item and return it (used when player picks it up)
     public PickupInteractable RemoveItem()
     {
+        {
+            RuntimeManager.PlayOneShot(pickupSound, transform.position);
+        }
+
         if (placedItem == null) return null;
 
         PickupInteractable item = placedItem;

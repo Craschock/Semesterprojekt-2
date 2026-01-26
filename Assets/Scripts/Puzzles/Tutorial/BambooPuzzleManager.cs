@@ -1,7 +1,11 @@
 using UnityEngine;
+using FMODUnity;
 
 public class BambooPuzzleManager : MonoBehaviour
 {
+    [Header("FMOD Audio")]
+    public EventReference puzzleCompleteSound;
+
     [Header("Slots that belong to this puzzle")]
     public PlaceSlot[] slots;
 
@@ -41,6 +45,11 @@ public class BambooPuzzleManager : MonoBehaviour
     private void OnPuzzleComplete()
     {
         Debug.Log("Puzzle Completed!");
+
+        if (!puzzleCompleteSound.IsNull)
+        {
+            RuntimeManager.PlayOneShot(puzzleCompleteSound);
+        }
 
         if (fog != null)
         {
