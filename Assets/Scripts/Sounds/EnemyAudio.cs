@@ -1,51 +1,23 @@
 using UnityEngine;
-using FMODUnity;
-using FMOD.Studio;
+using System.Collections.Generic;
 
 public class EnemyAudio : MonoBehaviour
 {
-    [Header("FMOD Settings")]
-    public EventReference battleMusicEvent;
-
-    private EventInstance musicInstance;
-
-    private void Start()
-    {
-        StartBattleMusic();
-    }
+    // Statische Liste aller aktiven Gegner
+    public static List<EnemyAudio> AllEnemies = new List<EnemyAudio>();
 
     private void OnEnable()
     {
-        if (!musicInstance.isValid())
-        {
-            StartBattleMusic();
-        }
+        AllEnemies.Add(this);
     }
 
     private void OnDisable()
     {
-        StopBattleMusic();
+        AllEnemies.Remove(this);
     }
 
     private void OnDestroy()
     {
-        StopBattleMusic();
-    }
-
-    private void StartBattleMusic()
-    {
-        if (battleMusicEvent.IsNull) return;
-        musicInstance = RuntimeManager.CreateInstance(battleMusicEvent);
-        RuntimeManager.AttachInstanceToGameObject(musicInstance, transform, GetComponent<Rigidbody>());
-        musicInstance.start();
-    }
-
-    private void StopBattleMusic()
-    {
-        if (musicInstance.isValid())
-        {
-            musicInstance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
-            musicInstance.release();
-        }
+        AllEnemies.Remove(this);
     }
 }

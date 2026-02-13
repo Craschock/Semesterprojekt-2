@@ -42,6 +42,7 @@ public class BambooPuzzleManager : MonoBehaviour
         return true;
     }
 
+    [ContextMenu("Complete Puzzle")]
     private void OnPuzzleComplete()
     {
         Debug.Log("Puzzle Completed!");

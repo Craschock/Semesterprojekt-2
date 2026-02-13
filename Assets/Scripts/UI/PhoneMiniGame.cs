@@ -11,6 +11,7 @@ public class PhoneMinigame : MonoBehaviour
     public EventReference bgmEvent;
     public EventReference hitSoundEvent;
     public EventReference missSoundEvent;
+    public EventReference fearReducedSound;
 
     [Header("UI References")]
     [Tooltip("Die Nadel")]
@@ -50,8 +51,8 @@ public class PhoneMinigame : MonoBehaviour
     private float currentSizeVal;
     private float currentDirection = 1f;
     private bool isInputLocked = false;
-
     private EventInstance bgmInstance;
+    private bool hasReducedFearThisSession = false;
 
     private void Start()
     {
@@ -64,12 +65,20 @@ public class PhoneMinigame : MonoBehaviour
         currentDirection = (Random.value > 0.5f) ? 1f : -1f;
         StartNewRound();
         isInputLocked = false;
+        hasReducedFearThisSession = false;
         StartMusic();
     }
 
     private void OnDisable()
     {
         StopMusic();
+        if (hasReducedFearThisSession)
+        {
+            if (!fearReducedSound.IsNull)
+            {
+                RuntimeManager.PlayOneShot(fearReducedSound);
+            }
+        }
     }
 
     private void Update()
@@ -161,6 +170,8 @@ public class PhoneMinigame : MonoBehaviour
             RuntimeManager.PlayOneShot(hitSoundEvent);
 
         if (stats != null) stats.ReduceFear(fearReduction);
+
+        hasReducedFearThisSession = true;
 
         // Ramp Up
         currentSpeedVal += speedIncreasePerHit;

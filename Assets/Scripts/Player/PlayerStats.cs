@@ -17,6 +17,7 @@ public class PlayerStats : MonoBehaviour
     public EventReference staminaDepletedSound;
     public EventReference modeSwitchSound;
     public EventReference consumableSelectSound;
+    public EventReference fearUpSound;
     private bool hasPlayedStaminaEmptySound = false;
 
     private EventInstance currentSelectionSoundInstance;
@@ -406,9 +407,26 @@ public class PlayerStats : MonoBehaviour
     // --- LOGIC: FEAR ---
     public void AddFear(float amount)
     {
+        float oldFear = currentStats.fear; // Alten Wert merken
+
         currentStats.fear += amount;
         currentStats.fear = Mathf.Clamp(currentStats.fear, 0, maxFear);
         OnFearChanged?.Invoke(currentStats.fear / maxFear);
+
+        // --- CHECK: 15er Step überschritten? ---
+        int oldStep = (int)(oldFear / 15f);
+        int newStep = (int)(currentStats.fear / 15f);
+
+        if (newStep > oldStep)
+        {
+            // Grenze überschritten! (z.B. von 14 auf 16, oder 29 auf 31)
+            Debug.Log($"Fear Step reached! {newStep * 15}");
+
+            if (!fearUpSound.IsNull)
+            {
+                RuntimeManager.PlayOneShot(fearUpSound);
+            }
+        }
     }
 
     public void ReduceFear(float amount)

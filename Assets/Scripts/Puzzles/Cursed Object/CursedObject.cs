@@ -11,6 +11,7 @@ public class CursedObject : MonoBehaviour, IInteractable
 
     [Header("FMOD Audio")]
     public EventReference pickupSound;
+    public EventReference curseTriggerSound;
 
     // References
     private OutlineController outline;
@@ -19,6 +20,7 @@ public class CursedObject : MonoBehaviour, IInteractable
 
     // State
     private bool isPlayerInRange = false;
+    private bool isCurseActive = false;
 
     private void Awake()
     {
@@ -42,10 +44,7 @@ public class CursedObject : MonoBehaviour, IInteractable
     {
         Debug.Log("(Picked up Object) - Cursed Object Obtained!");
 
-        if (!pickupSound.IsNull)
-        {
-            RuntimeManager.PlayOneShot(pickupSound);
-        }
+        if (!pickupSound.IsNull) RuntimeManager.PlayOneShot(pickupSound);
 
         // Check cursed object in playerstats please
 
@@ -56,18 +55,14 @@ public class CursedObject : MonoBehaviour, IInteractable
             playerMovement = null;
         }
 
+        if (CurseVisuals.Instance != null) CurseVisuals.Instance.SetCurseActive(false);
+
         gameObject.SetActive(false);
     }
 
-    public void OnFocus()
-    {
-        if (outline != null) outline.SetToHighlight();
-    }
+    public void OnFocus() { if (outline != null) outline.SetToHighlight(); }
 
-    public void OnLoseFocus()
-    {
-        if (outline != null) outline.SetToProximityOrDefault();
-    }
+    public void OnLoseFocus() { if (outline != null) outline.SetToProximityOrDefault(); }
 
     // --- CURSE LOGIC ---
     public void OnCurseZoneEnter(Collider player)
@@ -125,17 +120,31 @@ public class CursedObject : MonoBehaviour, IInteractable
 
     private void ApplyCurse()
     {
+        // 1. Movement einschränken
         Vector3 dirToObject = visualCenter.position - playerMovement.transform.position;
         dirToObject.y = 0;
         playerMovement.SetMovementRestriction(dirToObject);
 
-        // Vignette on
+        // 2. Visuals an
         if (CurseVisuals.Instance != null)
             CurseVisuals.Instance.SetCurseActive(true);
+
+        // 3. --- AUDIO START (Nur einmalig beim Eintritt) ---
+        if (!isCurseActive)
+        {
+            if (!curseTriggerSound.IsNull)
+            {
+                RuntimeManager.PlayOneShot(curseTriggerSound, transform.position);
+            }
+            isCurseActive = true; // Sperre setzen
+        }
     }
 
     private void LiftCurse()
     {
+        // Sperre aufheben, damit Sound beim nächsten Mal wieder kommen kann
+        isCurseActive = false;
+
         if (playerMovement != null)
         {
             playerMovement.ClearMovementRestriction();
