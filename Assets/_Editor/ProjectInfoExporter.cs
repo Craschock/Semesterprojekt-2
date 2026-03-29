@@ -50,18 +50,30 @@ public class ProjectInfoExporter : Editor
         sb.AppendLine();
 
         // ---------------------------------------------------------
-        // 3. SCRIPT CONTENTS (All .cs files)
+        // 3. SCRIPT CONTENTS (Only .cs files in "Assets/!")
         // ---------------------------------------------------------
         sb.AppendLine("### 3. SCRIPT CONTENTS ###");
-        var csFiles = allFiles.Where(f => f.EndsWith(".cs")).ToArray();
         
-        foreach (string file in csFiles)
+        // Pfad zum "!" Ordner im Assets-Verzeichnis
+        string targetFolderPath = Path.Combine(Application.dataPath, "!");
+        
+        if (Directory.Exists(targetFolderPath))
         {
-            string relativePath = file.Replace(projectPath, "").TrimStart('\\', '/').Replace("\\", "/");
-            sb.AppendLine("\n========================================");
-            sb.AppendLine($"// FILE: {relativePath}");
-            sb.AppendLine("========================================");
-            sb.AppendLine(File.ReadAllText(file));
+            // Sucht alle .cs Dateien im "!" Ordner und allen Subordnern
+            string[] csFiles = Directory.GetFiles(targetFolderPath, "*.cs", SearchOption.AllDirectories);
+            
+            foreach (string file in csFiles)
+            {
+                string relativePath = file.Replace(projectPath, "").TrimStart('\\', '/').Replace("\\", "/");
+                sb.AppendLine("\n========================================");
+                sb.AppendLine($"// FILE: {relativePath}");
+                sb.AppendLine("========================================");
+                sb.AppendLine(File.ReadAllText(file));
+            }
+        }
+        else
+        {
+            sb.AppendLine($"\n[HINWEIS: Der Ordner '!' wurde im Pfad '{targetFolderPath}' nicht gefunden.]");
         }
 
         // ---------------------------------------------------------

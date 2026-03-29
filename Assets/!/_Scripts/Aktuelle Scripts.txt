@@ -1,0 +1,3432 @@
+﻿========================================
+// DATEI: EnemyPathfinding\Scripts\EnemyControl.cs
+========================================
+using UnityEngine;
+using UnityEngine.AI;
+
+
+[RequireComponent(typeof(NavMeshAgent))]
+
+public class EnemyControl : MonoBehaviour
+{
+    public Transform[] patrolPoints;
+    public int nextPoint;
+    public float speed; //default speed
+    public float alertSpeed; //speed when he is investigating
+
+    private NavMeshAgent agent; //the navmesh agent
+    private float distance; //distance to next point
+
+    private bool isInvestigating = false; //true if going to alertSpot rn
+    private Vector3 investigationPoint; //coords of point he is investigating
+
+    // Start is called once before the first execution of Update after the MonoBehaviour is created
+    void Start()
+    {
+        agent = GetComponent<NavMeshAgent>();
+        agent.speed = speed;
+        agent.isStopped = false; //needed so enemy starts moving
+
+        nextPoint = 0;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        //CHECK IF INVESTIGATING OR PATROLLING
+        if (isInvestigating)
+        {
+            HandleInvestigation();
+        }
+        else
+        {
+            HandlePatrol();
+        }
+    }
+
+    void HandlePatrol(){
+        // Debug.Log("dscbisd");
+        agent.SetDestination(patrolPoints[nextPoint].position);
+        // Debug.Log("leck mich am arsch")
+
+        distance = Vector3.Distance(transform.position, patrolPoints[nextPoint].position);
+        // Debug.Log("Distance: " + distance);
+        // Debug.Log("Next Point: " + nextPoint);
+
+        if(distance < 1.25f){
+            switchNextPoint();
+        }
+    }
+
+    void HandleInvestigation(){
+        //turn yellow during investigation period
+        GetComponent<Renderer>().material.color = Color.yellow;
+
+        //yokai is faster during investigation
+        agent.speed = alertSpeed;
+
+        agent.SetDestination(investigationPoint);
+        
+        float distToAlert = Vector3.Distance(transform.position, investigationPoint); //check if reached alertpoint
+
+        if(distToAlert < 0.75f){
+            //arrived at alert spot -> resuming patrol, later of course he'll see if he finds player and if so u are cooked
+            isInvestigating = false;
+
+            //go back to default color
+            GetComponent<Renderer>().material.color = Color.black;
+
+            //go back to default speed
+            agent.speed = speed;
+        }
+    }
+
+    void switchNextPoint(){
+        if(nextPoint < patrolPoints.Length - 1){
+            nextPoint++;
+        }
+        else{
+            nextPoint = 0;
+        }
+    }
+
+    public void InvestigatePoint(Vector3 targetPosition)
+    {
+        //enemy has received a command to go somewhere, used for hunter alerts but could be applied to other things
+        investigationPoint = targetPosition;
+        isInvestigating = true;
+    }
+}
+========================================
+// DATEI: EnemyPathfinding\Scripts\EnemyPath.cs
+========================================
+using UnityEngine;
+using UnityEngine.AI;
+using System.Collections.Generic;
+
+public class EnemyPath : MonoBehaviour
+{
+    //patrol stuff
+    public Transform[] patrolPoints;
+    public int currentPointIndex = 0;
+    public float speed = 1.0f;
+    public float runSpeed = 3.0f;
+
+    public NavMeshAgent agent; //drag n drop inside unity
+    
+    //states, maybe use for animation
+    public bool isAlerted = false;
+    public Vector3 alertLocation;
+
+    //stuff for a* to expand on navMesh
+    public bool useMyPathfinding = false; 
+    GridPathfinder pathfinder;
+    List<Vector3> currentPath; //path enemy is going before a*
+    int pathIndex = 0;
+
+    void Start()
+    {
+        if(agent == null)
+            agent = GetComponent<NavMeshAgent>();
+
+        agent.speed = speed;
+        
+        //setup a* grid //Grid size hardcoded erstmal, muss melvo fragen erst ob wir das dynamic brauchen
+        if (useMyPathfinding)
+        {
+            pathfinder = new GridPathfinder();
+            pathfinder.CreateGrid(transform.position, 50, 1);
+        }
+    }
+
+    void Update()
+    {
+        //debug
+        // if(isAlerted) 
+        //     GetComponent<Renderer>().material.color = Color.red;
+        // else 
+        //     GetComponent<Renderer>().material.color = Color.blue;
+
+        if (useMyPathfinding)
+        {
+            Vector3 target;
+            //expand navmesh via a* grid
+            if (isAlerted)
+            {
+                target = alertLocation;
+            }
+            else
+            {
+                target = patrolPoints[currentPointIndex].position;
+            }
+            
+            //calculate path only if we have none or target changed 
+            //for now only recalc if path is null (cuz this might be ass for performance, gotta check)
+            if(currentPath == null)
+            {
+                currentPath = pathfinder.FindPath(transform.position, target);
+                pathIndex = 0;
+            }
+
+            //custom navmesh moveTowards mechanic
+            if(currentPath != null && pathIndex < currentPath.Count)
+            {
+                Vector3 nextNode = currentPath[pathIndex];
+                
+                float currentMovementSpeed;
+                if (isAlerted)
+                {
+                    currentMovementSpeed = runSpeed;
+                }
+                else
+                {
+                    currentMovementSpeed = speed;
+                }
+
+                transform.position = Vector3.MoveTowards(
+                    transform.position, 
+                    nextNode, 
+                    currentMovementSpeed * Time.deltaTime
+                );
+
+                //check if node distance is reached, if so move to next
+                if(Vector3.Distance(transform.position, nextNode) < 0.2f)
+                {
+                    pathIndex++;
+                }
+            }
+            else
+            {
+                //runs if we reached end of current path
+                currentPath = null; //set currentPath to null so earlier check will recalculate
+                
+                if(!isAlerted)
+                {
+                    //go to next
+                    currentPointIndex++;
+                    if (currentPointIndex >= patrolPoints.Length) currentPointIndex = 0;
+                }
+                else
+                {
+                    //check if investigation over
+                    float dist = Vector3.Distance(transform.position, alertLocation);
+                    if(dist < 1f)
+                    {
+                        isAlerted = false;
+                        agent.speed = speed;
+                    }
+                }
+            }
+        }
+        else
+        {
+            //NAV MESH LOGIC
+            if (isAlerted)
+            {
+                //investigation
+                agent.speed = runSpeed;
+                agent.SetDestination(alertLocation);
+
+                if (Vector3.Distance(transform.position, alertLocation) < 1.0f)
+                {
+                    //he is tehre
+                    isAlerted = false;
+                    agent.speed = speed;
+                }
+            }
+            else
+            {
+                //patrol/random walk for main yokai
+                agent.speed = speed;
+                if (patrolPoints.Length > 0)
+                {
+                    agent.SetDestination(patrolPoints[currentPointIndex].position);
+
+                    //check distance
+                    if (agent.remainingDistance < 0.5f && !agent.pathPending)
+                    {
+                        currentPointIndex++;
+                        if (currentPointIndex >= patrolPoints.Length)
+                        {
+                            currentPointIndex = 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    //call to trigger enemy
+    public void GoToPoint(Vector3 pos)
+    {
+        alertLocation = pos;
+        isAlerted = true;
+        currentPath = null; //reset a* path to recalculate
+    }
+}
+
+//Grid Pathfinder
+//this is mostly from the tutorial, but just adjusted
+public class GridPathfinder
+{
+    Node[,] grid;
+    float gridSize;
+    float nodeRadius;
+    int gridSizeX, gridSizeY;
+    Vector3 gridOrigin;
+
+    public void CreateGrid(Vector3 center, float size, float nodeSize)
+    {
+        gridSize = size;
+        nodeRadius = nodeSize / 2;
+        gridSizeX = Mathf.RoundToInt(size / nodeSize);
+        gridSizeY = Mathf.RoundToInt(size / nodeSize);
+        gridOrigin = center;
+
+        grid = new Node[gridSizeX, gridSizeY];
+
+        //loop through nodes inside grid instead of instancing like in the tutorial
+        for (int x = 0; x < gridSizeX; x++)
+        {
+            for (int y = 0; y < gridSizeY; y++)
+            {
+                //then turn node pos into world pos
+                float xPos = (x * nodeSize) - (size / 2) + center.x;
+                float zPos = (y * nodeSize) - (size / 2) + center.z;
+                Vector3 worldPoint = new Vector3(xPos, 0, zPos);
+
+                //and check if in layer Default (anstatt wie in tutorial walkable check (melvin sagt Default Layer sind nur obstacles))
+                bool walkable = !Physics.CheckSphere(worldPoint, nodeRadius, LayerMask.GetMask("Default"));
+                
+                grid[x, y] = new Node(walkable, worldPoint, x, y);
+            }
+        }
+    }
+
+    public List<Vector3> FindPath(Vector3 startPos, Vector3 targetPos)
+    {
+        Node startNode = NodeFromWorldPoint(startPos);
+        Node targetNode = NodeFromWorldPoint(targetPos);
+        
+        if (startNode == null || targetNode == null || !targetNode.walkable) return null;
+
+        List<Node> openSet = new List<Node>();
+        HashSet<Node> closedSet = new HashSet<Node>();
+        
+        openSet.Add(startNode);
+
+        while (openSet.Count > 0)
+        {
+            Node currentNode = openSet[0];
+            
+            //get lowest fCost node
+            for (int i = 1; i < openSet.Count; i++)
+            {
+                if (openSet[i].fCost() < currentNode.fCost() || openSet[i].fCost() == currentNode.fCost() && openSet[i].hCost < currentNode.hCost)
+                {
+                    currentNode = openSet[i];
+                }
+            }
+
+            openSet.Remove(currentNode);
+            closedSet.Add(currentNode);
+
+            if (currentNode == targetNode)
+            {
+                return GetPath(startNode, targetNode);
+            }
+
+            foreach (Node neighbour in GetNeighbours(currentNode))
+            {
+                if (!neighbour.walkable || closedSet.Contains(neighbour)) continue;
+
+                float newMovementCostToNeighbour = currentNode.gCost + GetDistance(currentNode, neighbour);
+                if (newMovementCostToNeighbour < neighbour.gCost || !openSet.Contains(neighbour))
+                {
+                    neighbour.gCost = newMovementCostToNeighbour;
+                    neighbour.hCost = GetDistance(neighbour, targetNode);
+                    neighbour.parent = currentNode;
+
+                    if (!openSet.Contains(neighbour))
+                        openSet.Add(neighbour);
+                }
+            }
+        }
+        return null; 
+    }
+
+    List<Vector3> GetPath(Node start, Node end)
+    {
+        List<Vector3> path = new List<Vector3>();
+        Node curr = end;
+        while(curr != start)
+        {
+            path.Add(curr.worldPos);
+            curr = curr.parent;
+        }
+        path.Reverse();
+        return path;
+    }
+
+    float GetDistance(Node A, Node B)
+    {
+        int dstX = Mathf.Abs(A.gridX - B.gridX);
+        int dstY = Mathf.Abs(A.gridY - B.gridY);
+        //14 is ca. sqrt(2) * 10 fÃ¼r diagonale, und 10 fÃ¼r gerade
+        if (dstX > dstY) return 14 * dstY + 10 * (dstX - dstY);
+        return 14 * dstX + 10 * (dstY - dstX);
+    }
+
+    List<Node> GetNeighbours(Node node)
+    {
+        List<Node> neighbors = new List<Node>();
+
+        for (int x = -1; x <= 1; x++)
+        {
+            for (int y = -1; y <= 1; y++)
+            {
+                if (x == 0 && y == 0) continue;
+
+                int checkX = node.gridX + x;
+                int checkY = node.gridY + y;
+
+                if (checkX >= 0 && checkX < gridSizeX && checkY >= 0 && checkY < gridSizeY)
+                {
+                    neighbors.Add(grid[checkX, checkY]);
+                }
+            }
+        }
+        return neighbors;
+    }
+
+    Node NodeFromWorldPoint(Vector3 worldPos)
+    {
+        //convert world to grid
+        float percentX = (worldPos.x + gridSize / 2) - gridOrigin.x; //simplified math from tutorial... kinda
+        float percentY = (worldPos.z + gridSize / 2) - gridOrigin.z;
+        
+        //i know this looks bad but it works for 0,0 center imo
+        percentX = percentX / gridSize;
+        percentY = percentY / gridSize;
+
+        percentX = Mathf.Clamp01(percentX);
+        percentY = Mathf.Clamp01(percentY);
+
+        int x = Mathf.RoundToInt((gridSizeX - 1) * percentX);
+        int y = Mathf.RoundToInt((gridSizeY - 1) * percentY);
+        
+        return grid[x, y];
+    }
+}
+
+public class Node //node class init
+{
+    public bool walkable;
+    public Vector3 worldPos;
+    public int gridX, gridY;
+    
+    public float gCost;
+    public float hCost;
+    public Node parent;
+
+    public Node(bool _walkable, Vector3 _pos, int _x, int _y)
+    {
+        walkable = _walkable;
+        worldPos = _pos;
+        gridX = _x;
+        gridY = _y;
+    }
+
+    public float fCost() { return gCost + hCost; }
+}
+========================================
+// DATEI: EnemyPathfinding\Scripts\GuardianAlert.cs
+========================================
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+public class GuardianAlert : MonoBehaviour
+{
+
+    [SerializeField] private HunterAlert hunterAlertScript;
+
+    void Start()
+    {
+        
+    }
+
+    void Update()
+    {
+        //for now trigger alert function by pressing K, later this triggers by loud things etc.
+        if (Keyboard.current.kKey.wasPressedThisFrame)
+        {
+            sendAlert();
+        }
+    }
+
+    public void sendAlert() {
+        //call alert and give current position
+        hunterAlertScript.gotAlerted(transform.position);
+    }
+}
+========================================
+// DATEI: EnemyPathfinding\Scripts\GuardianVision.cs
+========================================
+using UnityEngine;
+
+public class GuardianVision : MonoBehaviour
+{
+    
+    public Transform player; //player object
+    public float viewRadius = 10f; //how far he can see in front of him
+    public float viewAngle = 90f; //how wide the cone will be, important: will be divided by 2 later (e.g. 90Â° angle means 45Â° on each side)
+    
+    public LayerMask obstacleMask = default; //not yet, later this has to be the layer all walls etc are in. (maybe i use tags instead, I'll see)
+
+    private GuardianAlert alertScript;
+
+    void Start()
+    {
+        alertScript = GetComponent<GuardianAlert>();
+    }
+
+    void update()
+    {
+        CheckForPlayer();
+    }
+
+    void CheckForPlayer(){
+        //check if player is in range at all
+        Vector3 dirToPlayer = (player.position - transform.position).normalized;
+        float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+
+        if(distanceToPlayer <= viewRadius){
+            //now check if he is inside the angle as well, this will basically pretend there is a cone while there actually isnt one
+            //literally how did i come up with this i'm literally a genius omg
+            //wish i came up with this earlier so i didnt waste 3 days on that old approach tho
+
+            if(Vector3.Angle(transform.forward, dirToPlayer) < viewAngle / 2){
+                //if player is both in view range AND in the angle (meaning he is inside the cone (magic i know)) check if there's a wall in between using the old way
+                
+                if (!Physics.Raycast(transform.position, dirToPlayer, distanceToPlayer, obstacleMask)){
+                    //player is visible
+                    alertScript.sendAlert();
+                }
+            }
+        }
+    }
+
+}
+========================================
+// DATEI: EnemyPathfinding\Scripts\HunterAlert.cs
+========================================
+using UnityEngine;
+
+public class HunterAlert : MonoBehaviour
+{
+
+    private EnemyControl enemyControl;
+
+    void Start()
+    {
+        enemyControl = GetComponent<EnemyControl>();
+    }
+
+    void Update()
+    {
+        
+    }
+
+    public void gotAlerted(Vector3 alertedPosition)
+    {
+        // Debug.Log("Guardian Alerted at " + alertedPosition);
+        if (enemyControl != null)
+        {
+            //tell yokai to stop patrolling and go to this point instead
+            enemyControl.InvestigatePoint(alertedPosition);
+        }
+    }
+}
+========================================
+// DATEI: EnemyPathfinding\Scripts\IPathFindingStrategy.cs
+========================================
+using UnityEngine;
+using System.Collections.Generic;
+
+public interface IPathfindingStrategy
+{
+    bool CalculatePath(Vector3 start, Vector3 end, out List<Vector3> pathPoints);
+    void Stop();
+    bool IsPathStale();
+}
+
+public class UnityNavMeshStrategyErik : MonoBehaviour, IPathfindingStrategy
+{
+    private UnityEngine.AI.NavMeshAgent _agent;
+
+    public void Awake() { _agent = GetComponent<UnityEngine.AI.NavMeshAgent>(); }
+
+    public bool CalculatePath(Vector3 start, Vector3 end, out List<Vector3> pathPoints)
+    {
+        //later put modular wrapper shit here or i have to apply this to every yokai manually
+        pathPoints = new List<Vector3>();
+        if (!_agent.isOnNavMesh) return false;
+        
+        UnityEngine.AI.NavMeshPath path = new UnityEngine.AI.NavMeshPath();
+        _agent.CalculatePath(end, path);
+        
+        foreach(var corner in path.corners) {
+            pathPoints.Add(corner);
+        }
+        return path.status == UnityEngine.AI.NavMeshPathStatus.PathComplete;
+    }
+
+    public void Stop() { _agent.isStopped = true; }
+
+    public bool IsPathStale() { return _agent.pathPending; }
+}
+========================================
+// DATEI: EnemyPathfinding\Scripts\PathFindSettings.cs
+========================================
+using UnityEngine;
+using System.Collections.Generic;
+
+public class AIPathfindingSettings : ScriptableObject
+{
+    [Header("Movement Dynamics")]
+    public float accelerationSmoothing = 5.0f;
+    
+    [Header("Corner Cutting")]
+    //should be somwhere between 0.1 or 2.0 or it will be cooked, but 0.5 looks best
+    public float cornerApproachRadius = 0.5f;
+    
+    public AnimationCurve speedOverTime;
+    public AnimationCurve accelerationOverTime;
+    
+    [Header("Pathfinding")]
+    public IPathfindingStrategy pathfindingStrategy = new UnityNavMeshStrategyErik();
+}
+========================================
+// DATEI: EnemyPathfinding\Scripts\PathRequestManager.cs
+========================================
+using UnityEngine;
+using System.Collections.Generic;
+
+//maybe increases performance, not quite sure lol
+public class PathRequestManager : MonoBehaviour
+{
+    private Queue<System.Action> _pathRequestQueue = new Queue<System.Action>();
+    
+    void Update() {
+        //only allow one pathfinder per frame
+        if (_pathRequestQueue.Count > 0) {
+            _pathRequestQueue.Dequeue().Invoke();
+        }
+    }
+    
+    public void RequestPath(System.Action callback) {
+        _pathRequestQueue.Enqueue(callback);
+    }
+}
+========================================
+// DATEI: EnemyPathfinding\Scripts\SoundSource.cs
+========================================
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+public class AreaEffect : MonoBehaviour
+{
+    [SerializeField] private float radius = 5f; //lol maybe later can be changed depending how lound sound is idk
+
+    void Update()
+    {
+        //for now trigger alert function by pressing L, later this triggers by loud things etc.
+        if (Keyboard.current.lKey.wasPressedThisFrame)
+        {
+            CheckNearbyYokai();
+            // Debug.Log("asdfasdf");
+        }
+
+        //show red radius sphere thing
+        transform.GetChild(0).localScale = Vector3.one * radius * 2;
+    }
+
+    void CheckNearbyYokai()
+    {
+        //create a fake sphere and get list of every object it collides with
+        Collider[] hitColliders = Physics.OverlapSphere(transform.position, radius);
+
+        foreach (var hitCollider in hitColliders)
+        {
+            //check if the is a guardian, by checking if it has GuardianAlert script
+            if (hitCollider.TryGetComponent<GuardianAlert>(out GuardianAlert target))
+            {
+                //if game object is in raduis and is a guardian, send alert
+                target.sendAlert();
+            }
+        }
+    }
+}
+========================================
+// DATEI: Systems\PlayerControls.cs
+========================================
+//------------------------------------------------------------------------------
+// <auto-generated>
+//     This code was auto-generated by com.unity.inputsystem:InputActionCodeGenerator
+//     version 1.18.0
+//     from Assets/!/_Scripts/Systems/PlayerControls.inputactions
+//
+//     Changes to this file may cause incorrect behavior and will be lost if
+//     the code is regenerated.
+// </auto-generated>
+//------------------------------------------------------------------------------
+
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Utilities;
+
+/// <summary>
+/// Provides programmatic access to <see cref="InputActionAsset" />, <see cref="InputActionMap" />, <see cref="InputAction" /> and <see cref="InputControlScheme" /> instances defined in asset "Assets/!/_Scripts/Systems/PlayerControls.inputactions".
+/// </summary>
+/// <remarks>
+/// This class is source generated and any manual edits will be discarded if the associated asset is reimported or modified.
+/// </remarks>
+/// <example>
+/// <code>
+/// using namespace UnityEngine;
+/// using UnityEngine.InputSystem;
+///
+/// // Example of using an InputActionMap named "Player" from a UnityEngine.MonoBehaviour implementing callback interface.
+/// public class Example : MonoBehaviour, MyActions.IPlayerActions
+/// {
+///     private MyActions_Actions m_Actions;                  // Source code representation of asset.
+///     private MyActions_Actions.PlayerActions m_Player;     // Source code representation of action map.
+///
+///     void Awake()
+///     {
+///         m_Actions = new MyActions_Actions();              // Create asset object.
+///         m_Player = m_Actions.Player;                      // Extract action map object.
+///         m_Player.AddCallbacks(this);                      // Register callback interface IPlayerActions.
+///     }
+///
+///     void OnDestroy()
+///     {
+///         m_Actions.Dispose();                              // Destroy asset object.
+///     }
+///
+///     void OnEnable()
+///     {
+///         m_Player.Enable();                                // Enable all actions within map.
+///     }
+///
+///     void OnDisable()
+///     {
+///         m_Player.Disable();                               // Disable all actions within map.
+///     }
+///
+///     #region Interface implementation of MyActions.IPlayerActions
+///
+///     // Invoked when "Move" action is either started, performed or canceled.
+///     public void OnMove(InputAction.CallbackContext context)
+///     {
+///         Debug.Log($"OnMove: {context.ReadValue&lt;Vector2&gt;()}");
+///     }
+///
+///     // Invoked when "Attack" action is either started, performed or canceled.
+///     public void OnAttack(InputAction.CallbackContext context)
+///     {
+///         Debug.Log($"OnAttack: {context.ReadValue&lt;float&gt;()}");
+///     }
+///
+///     #endregion
+/// }
+/// </code>
+/// </example>
+public partial class @PlayerControls: IInputActionCollection2, IDisposable
+{
+    /// <summary>
+    /// Provides access to the underlying asset instance.
+    /// </summary>
+    public InputActionAsset asset { get; }
+
+    /// <summary>
+    /// Constructs a new instance.
+    /// </summary>
+    public @PlayerControls()
+    {
+        asset = InputActionAsset.FromJson(@"{
+    ""version"": 1,
+    ""name"": ""PlayerControls"",
+    ""maps"": [
+        {
+            ""name"": ""Player"",
+            ""id"": ""5b66abc2-0912-400f-94d2-1b39ba829faa"",
+            ""actions"": [
+                {
+                    ""name"": ""Look"",
+                    ""type"": ""PassThrough"",
+                    ""id"": ""bc2c477e-d6c8-495c-9c1e-6d6bac6b666c"",
+                    ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Move"",
+                    ""type"": ""Value"",
+                    ""id"": ""d3cfaae6-7a3c-43df-86e6-c9d9eb367daa"",
+                    ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""Sprint"",
+                    ""type"": ""Button"",
+                    ""id"": ""c2fa96b3-780b-4aff-97d4-bb6a0998c85a"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Crouch"",
+                    ""type"": ""Button"",
+                    ""id"": ""adddd75e-3239-4630-93c9-8539a293061f"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Interact"",
+                    ""type"": ""Button"",
+                    ""id"": ""f98a3ccf-c42f-4cde-adf3-4c9330a902d1"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Focus"",
+                    ""type"": ""Button"",
+                    ""id"": ""9dfd08b1-e4c8-4b06-bb9a-e958ffc2b50a"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""RotateX"",
+                    ""type"": ""Value"",
+                    ""id"": ""3ca0b5dd-ca65-4580-8bef-a0808b4889d5"",
+                    ""expectedControlType"": ""Axis"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""RotateY"",
+                    ""type"": ""Value"",
+                    ""id"": ""7521022f-4d95-4833-a7d7-5bc905b2c8ac"",
+                    ""expectedControlType"": ""Axis"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""Slot1"",
+                    ""type"": ""Button"",
+                    ""id"": ""cf698fe0-2eba-4885-bbd2-360ee15b4f3a"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Slot2"",
+                    ""type"": ""Button"",
+                    ""id"": ""3e844866-1ac1-4920-93f1-be6395794d53"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Consume"",
+                    ""type"": ""Value"",
+                    ""id"": ""bf5c7b7d-ec71-4ec0-a67b-3290cac07f6f"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""EquipLighter"",
+                    ""type"": ""Button"",
+                    ""id"": ""93531a99-944a-4002-9b5e-75e05f557d94"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""EquipPhone"",
+                    ""type"": ""Button"",
+                    ""id"": ""05b2a3c0-f091-4fbb-8ab5-a2a8492e7467"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Pause"",
+                    ""type"": ""Button"",
+                    ""id"": ""de84d734-4e78-4817-878d-ff12f317f6cf"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""4f3f56b6-7873-406e-b065-95bc8286a2f2"",
+                    ""path"": ""<Mouse>/delta"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Look"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""2D Vector WASD"",
+                    ""id"": ""10fd3a0a-c672-470b-a955-d2a7878bf0bb"",
+                    ""path"": ""2DVector"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""up"",
+                    ""id"": ""986b2cbe-9691-42f7-830e-3b6008d53589"",
+                    ""path"": ""<Keyboard>/w"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""down"",
+                    ""id"": ""da260c5d-0290-462d-b575-15f73bcd4cc8"",
+                    ""path"": ""<Keyboard>/s"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""left"",
+                    ""id"": ""8b1e227d-bdf0-4579-8f0e-f3f35ebb8ccb"",
+                    ""path"": ""<Keyboard>/a"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""right"",
+                    ""id"": ""8ec0923c-0358-491b-a99e-48f5d19e51ed"",
+                    ""path"": ""<Keyboard>/d"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""2D Vector Arrow Keys"",
+                    ""id"": ""9a19c54b-856b-4488-ad4e-8f76d5a3833e"",
+                    ""path"": ""2DVector"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""up"",
+                    ""id"": ""cff71262-35cd-4b56-9e45-ffdcb73e3d69"",
+                    ""path"": ""<Keyboard>/upArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""down"",
+                    ""id"": ""8811103e-1869-464c-ac95-efeb31d4fdc6"",
+                    ""path"": ""<Keyboard>/downArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""left"",
+                    ""id"": ""0b9f349f-f74f-4af2-8690-a6704f65d9ba"",
+                    ""path"": ""<Keyboard>/leftArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""right"",
+                    ""id"": ""d4bd6b58-6384-4a90-98c3-16fc2a434cae"",
+                    ""path"": ""<Keyboard>/rightArrow"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Move"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""2907fcce-6c2c-4c6c-a78c-40a4c0d79bff"",
+                    ""path"": ""<Keyboard>/shift"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Sprint"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""c726ba64-2f91-4787-9a93-0f72ebdadbac"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Interact"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""a7dd6f23-4042-447d-918a-7da8191c8bbb"",
+                    ""path"": ""<Keyboard>/f"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Focus"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""1D Axis"",
+                    ""id"": ""4774f82e-e570-4e23-8192-9b838d7b4001"",
+                    ""path"": ""1DAxis"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""RotateY"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""negative"",
+                    ""id"": ""a2e95ab8-bc82-450e-9851-9d9e45ac865c"",
+                    ""path"": ""<Keyboard>/s"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""RotateY"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""positive"",
+                    ""id"": ""1c687838-07dd-4e09-a101-cae7768bff0a"",
+                    ""path"": ""<Keyboard>/w"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""RotateY"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""1D Axis"",
+                    ""id"": ""c2b72352-b52b-4d2a-8289-7433ed1a1aa4"",
+                    ""path"": ""1DAxis"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""RotateX"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""Negative"",
+                    ""id"": ""69045613-8af9-4f8d-90c8-69aba5715336"",
+                    ""path"": ""<Keyboard>/a"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""RotateX"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""Positive"",
+                    ""id"": ""d9190cda-48e7-4bd4-8a0e-5dec3f93c625"",
+                    ""path"": ""<Keyboard>/d"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""RotateX"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""8752519a-bb20-4cdd-9317-7f973baa450f"",
+                    ""path"": ""<Keyboard>/c"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Crouch"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""d56921c5-e27f-4319-a37d-1857a60083af"",
+                    ""path"": ""<Keyboard>/ctrl"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Crouch"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""9a8a7079-43d7-4562-b5de-283f4550878c"",
+                    ""path"": ""<Keyboard>/1"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Slot1"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""7662b780-80e4-4512-94f1-8bd052524f95"",
+                    ""path"": ""<Keyboard>/2"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Slot2"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""89ba5f86-4765-43fc-9d03-4c08fe36ec65"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Consume"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""09af4c6a-6563-4f6c-892c-1824fa410aad"",
+                    ""path"": ""<Keyboard>/f"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""EquipLighter"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""df512750-1991-454c-bea9-1201c0dfd147"",
+                    ""path"": ""<Keyboard>/space"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""EquipPhone"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""99e23754-4625-461b-834d-af7845a57276"",
+                    ""path"": ""<Keyboard>/tab"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Pause"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
+        }
+    ],
+    ""controlSchemes"": []
+}");
+        // Player
+        m_Player = asset.FindActionMap("Player", throwIfNotFound: true);
+        m_Player_Look = m_Player.FindAction("Look", throwIfNotFound: true);
+        m_Player_Move = m_Player.FindAction("Move", throwIfNotFound: true);
+        m_Player_Sprint = m_Player.FindAction("Sprint", throwIfNotFound: true);
+        m_Player_Crouch = m_Player.FindAction("Crouch", throwIfNotFound: true);
+        m_Player_Interact = m_Player.FindAction("Interact", throwIfNotFound: true);
+        m_Player_Focus = m_Player.FindAction("Focus", throwIfNotFound: true);
+        m_Player_RotateX = m_Player.FindAction("RotateX", throwIfNotFound: true);
+        m_Player_RotateY = m_Player.FindAction("RotateY", throwIfNotFound: true);
+        m_Player_Slot1 = m_Player.FindAction("Slot1", throwIfNotFound: true);
+        m_Player_Slot2 = m_Player.FindAction("Slot2", throwIfNotFound: true);
+        m_Player_Consume = m_Player.FindAction("Consume", throwIfNotFound: true);
+        m_Player_EquipLighter = m_Player.FindAction("EquipLighter", throwIfNotFound: true);
+        m_Player_EquipPhone = m_Player.FindAction("EquipPhone", throwIfNotFound: true);
+        m_Player_Pause = m_Player.FindAction("Pause", throwIfNotFound: true);
+    }
+
+    ~@PlayerControls()
+    {
+        UnityEngine.Debug.Assert(!m_Player.enabled, "This will cause a leak and performance issues, PlayerControls.Player.Disable() has not been called.");
+    }
+
+    /// <summary>
+    /// Destroys this asset and all associated <see cref="InputAction"/> instances.
+    /// </summary>
+    public void Dispose()
+    {
+        UnityEngine.Object.Destroy(asset);
+    }
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.bindingMask" />
+    public InputBinding? bindingMask
+    {
+        get => asset.bindingMask;
+        set => asset.bindingMask = value;
+    }
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.devices" />
+    public ReadOnlyArray<InputDevice>? devices
+    {
+        get => asset.devices;
+        set => asset.devices = value;
+    }
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.controlSchemes" />
+    public ReadOnlyArray<InputControlScheme> controlSchemes => asset.controlSchemes;
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.Contains(InputAction)" />
+    public bool Contains(InputAction action)
+    {
+        return asset.Contains(action);
+    }
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.GetEnumerator()" />
+    public IEnumerator<InputAction> GetEnumerator()
+    {
+        return asset.GetEnumerator();
+    }
+
+    /// <inheritdoc cref="IEnumerable.GetEnumerator()" />
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return GetEnumerator();
+    }
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.Enable()" />
+    public void Enable()
+    {
+        asset.Enable();
+    }
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.Disable()" />
+    public void Disable()
+    {
+        asset.Disable();
+    }
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.bindings" />
+    public IEnumerable<InputBinding> bindings => asset.bindings;
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.FindAction(string, bool)" />
+    public InputAction FindAction(string actionNameOrId, bool throwIfNotFound = false)
+    {
+        return asset.FindAction(actionNameOrId, throwIfNotFound);
+    }
+
+    /// <inheritdoc cref="UnityEngine.InputSystem.InputActionAsset.FindBinding(InputBinding, out InputAction)" />
+    public int FindBinding(InputBinding bindingMask, out InputAction action)
+    {
+        return asset.FindBinding(bindingMask, out action);
+    }
+
+    // Player
+    private readonly InputActionMap m_Player;
+    private List<IPlayerActions> m_PlayerActionsCallbackInterfaces = new List<IPlayerActions>();
+    private readonly InputAction m_Player_Look;
+    private readonly InputAction m_Player_Move;
+    private readonly InputAction m_Player_Sprint;
+    private readonly InputAction m_Player_Crouch;
+    private readonly InputAction m_Player_Interact;
+    private readonly InputAction m_Player_Focus;
+    private readonly InputAction m_Player_RotateX;
+    private readonly InputAction m_Player_RotateY;
+    private readonly InputAction m_Player_Slot1;
+    private readonly InputAction m_Player_Slot2;
+    private readonly InputAction m_Player_Consume;
+    private readonly InputAction m_Player_EquipLighter;
+    private readonly InputAction m_Player_EquipPhone;
+    private readonly InputAction m_Player_Pause;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "Player".
+    /// </summary>
+    public struct PlayerActions
+    {
+        private @PlayerControls m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public PlayerActions(@PlayerControls wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Look".
+        /// </summary>
+        public InputAction @Look => m_Wrapper.m_Player_Look;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Move".
+        /// </summary>
+        public InputAction @Move => m_Wrapper.m_Player_Move;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Sprint".
+        /// </summary>
+        public InputAction @Sprint => m_Wrapper.m_Player_Sprint;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Crouch".
+        /// </summary>
+        public InputAction @Crouch => m_Wrapper.m_Player_Crouch;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Interact".
+        /// </summary>
+        public InputAction @Interact => m_Wrapper.m_Player_Interact;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Focus".
+        /// </summary>
+        public InputAction @Focus => m_Wrapper.m_Player_Focus;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/RotateX".
+        /// </summary>
+        public InputAction @RotateX => m_Wrapper.m_Player_RotateX;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/RotateY".
+        /// </summary>
+        public InputAction @RotateY => m_Wrapper.m_Player_RotateY;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Slot1".
+        /// </summary>
+        public InputAction @Slot1 => m_Wrapper.m_Player_Slot1;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Slot2".
+        /// </summary>
+        public InputAction @Slot2 => m_Wrapper.m_Player_Slot2;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Consume".
+        /// </summary>
+        public InputAction @Consume => m_Wrapper.m_Player_Consume;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/EquipLighter".
+        /// </summary>
+        public InputAction @EquipLighter => m_Wrapper.m_Player_EquipLighter;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/EquipPhone".
+        /// </summary>
+        public InputAction @EquipPhone => m_Wrapper.m_Player_EquipPhone;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Pause".
+        /// </summary>
+        public InputAction @Pause => m_Wrapper.m_Player_Pause;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_Player; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="PlayerActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(PlayerActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="PlayerActions" />
+        public void AddCallbacks(IPlayerActions instance)
+        {
+            if (instance == null || m_Wrapper.m_PlayerActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_PlayerActionsCallbackInterfaces.Add(instance);
+            @Look.started += instance.OnLook;
+            @Look.performed += instance.OnLook;
+            @Look.canceled += instance.OnLook;
+            @Move.started += instance.OnMove;
+            @Move.performed += instance.OnMove;
+            @Move.canceled += instance.OnMove;
+            @Sprint.started += instance.OnSprint;
+            @Sprint.performed += instance.OnSprint;
+            @Sprint.canceled += instance.OnSprint;
+            @Crouch.started += instance.OnCrouch;
+            @Crouch.performed += instance.OnCrouch;
+            @Crouch.canceled += instance.OnCrouch;
+            @Interact.started += instance.OnInteract;
+            @Interact.performed += instance.OnInteract;
+            @Interact.canceled += instance.OnInteract;
+            @Focus.started += instance.OnFocus;
+            @Focus.performed += instance.OnFocus;
+            @Focus.canceled += instance.OnFocus;
+            @RotateX.started += instance.OnRotateX;
+            @RotateX.performed += instance.OnRotateX;
+            @RotateX.canceled += instance.OnRotateX;
+            @RotateY.started += instance.OnRotateY;
+            @RotateY.performed += instance.OnRotateY;
+            @RotateY.canceled += instance.OnRotateY;
+            @Slot1.started += instance.OnSlot1;
+            @Slot1.performed += instance.OnSlot1;
+            @Slot1.canceled += instance.OnSlot1;
+            @Slot2.started += instance.OnSlot2;
+            @Slot2.performed += instance.OnSlot2;
+            @Slot2.canceled += instance.OnSlot2;
+            @Consume.started += instance.OnConsume;
+            @Consume.performed += instance.OnConsume;
+            @Consume.canceled += instance.OnConsume;
+            @EquipLighter.started += instance.OnEquipLighter;
+            @EquipLighter.performed += instance.OnEquipLighter;
+            @EquipLighter.canceled += instance.OnEquipLighter;
+            @EquipPhone.started += instance.OnEquipPhone;
+            @EquipPhone.performed += instance.OnEquipPhone;
+            @EquipPhone.canceled += instance.OnEquipPhone;
+            @Pause.started += instance.OnPause;
+            @Pause.performed += instance.OnPause;
+            @Pause.canceled += instance.OnPause;
+        }
+
+        /// <summary>
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="PlayerActions" />
+        private void UnregisterCallbacks(IPlayerActions instance)
+        {
+            @Look.started -= instance.OnLook;
+            @Look.performed -= instance.OnLook;
+            @Look.canceled -= instance.OnLook;
+            @Move.started -= instance.OnMove;
+            @Move.performed -= instance.OnMove;
+            @Move.canceled -= instance.OnMove;
+            @Sprint.started -= instance.OnSprint;
+            @Sprint.performed -= instance.OnSprint;
+            @Sprint.canceled -= instance.OnSprint;
+            @Crouch.started -= instance.OnCrouch;
+            @Crouch.performed -= instance.OnCrouch;
+            @Crouch.canceled -= instance.OnCrouch;
+            @Interact.started -= instance.OnInteract;
+            @Interact.performed -= instance.OnInteract;
+            @Interact.canceled -= instance.OnInteract;
+            @Focus.started -= instance.OnFocus;
+            @Focus.performed -= instance.OnFocus;
+            @Focus.canceled -= instance.OnFocus;
+            @RotateX.started -= instance.OnRotateX;
+            @RotateX.performed -= instance.OnRotateX;
+            @RotateX.canceled -= instance.OnRotateX;
+            @RotateY.started -= instance.OnRotateY;
+            @RotateY.performed -= instance.OnRotateY;
+            @RotateY.canceled -= instance.OnRotateY;
+            @Slot1.started -= instance.OnSlot1;
+            @Slot1.performed -= instance.OnSlot1;
+            @Slot1.canceled -= instance.OnSlot1;
+            @Slot2.started -= instance.OnSlot2;
+            @Slot2.performed -= instance.OnSlot2;
+            @Slot2.canceled -= instance.OnSlot2;
+            @Consume.started -= instance.OnConsume;
+            @Consume.performed -= instance.OnConsume;
+            @Consume.canceled -= instance.OnConsume;
+            @EquipLighter.started -= instance.OnEquipLighter;
+            @EquipLighter.performed -= instance.OnEquipLighter;
+            @EquipLighter.canceled -= instance.OnEquipLighter;
+            @EquipPhone.started -= instance.OnEquipPhone;
+            @EquipPhone.performed -= instance.OnEquipPhone;
+            @EquipPhone.canceled -= instance.OnEquipPhone;
+            @Pause.started -= instance.OnPause;
+            @Pause.performed -= instance.OnPause;
+            @Pause.canceled -= instance.OnPause;
+        }
+
+        /// <summary>
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="PlayerActions.UnregisterCallbacks(IPlayerActions)" />.
+        /// </summary>
+        /// <seealso cref="PlayerActions.UnregisterCallbacks(IPlayerActions)" />
+        public void RemoveCallbacks(IPlayerActions instance)
+        {
+            if (m_Wrapper.m_PlayerActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        /// <summary>
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="PlayerActions.AddCallbacks(IPlayerActions)" />
+        /// <seealso cref="PlayerActions.RemoveCallbacks(IPlayerActions)" />
+        /// <seealso cref="PlayerActions.UnregisterCallbacks(IPlayerActions)" />
+        public void SetCallbacks(IPlayerActions instance)
+        {
+            foreach (var item in m_Wrapper.m_PlayerActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_PlayerActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    /// <summary>
+    /// Provides a new <see cref="PlayerActions" /> instance referencing this action map.
+    /// </summary>
+    public PlayerActions @Player => new PlayerActions(this);
+    /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Player" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="PlayerActions.AddCallbacks(IPlayerActions)" />
+    /// <seealso cref="PlayerActions.RemoveCallbacks(IPlayerActions)" />
+    public interface IPlayerActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "Look" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnLook(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Move" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnMove(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Sprint" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSprint(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Crouch" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnCrouch(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Interact" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnInteract(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Focus" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnFocus(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "RotateX" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnRotateX(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "RotateY" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnRotateY(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Slot1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSlot1(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Slot2" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSlot2(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Consume" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnConsume(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "EquipLighter" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnEquipLighter(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "EquipPhone" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnEquipPhone(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Pause" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnPause(InputAction.CallbackContext context);
+    }
+}
+========================================
+// DATEI: Systems\PlayerInputTest.cs
+========================================
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+public class PlayerInputTest : MonoBehaviour
+{
+    private PlayerControls controls;
+
+    private void Awake()
+    {
+        controls = new PlayerControls();
+    }
+
+    private void OnEnable()
+    {
+        controls.Enable();
+    }
+
+    private void OnDisable()
+    {
+        controls.Disable();
+    }
+
+    private void Update()
+    {
+        Vector2 moveInput = controls.Player.Move.ReadValue<Vector2>();
+        Vector2 lookInput = controls.Player.Look.ReadValue<Vector2>();
+
+        // Debug whatfs happening
+        Debug.Log($"Move: {moveInput}, Look: {lookInput}");
+    }
+}
+========================================
+// DATEI: _Interactables\IInteractable.cs
+========================================
+using UnityEngine;
+
+/// <summary>
+/// Interface for all objects the player can interact with in the world.
+/// </summary>
+public interface IInteractable
+{
+    /// <summary>
+    /// Called when the player presses the interact button while looking at the object.
+    /// </summary>
+    /// <param name="interactor">The PlayerInteraction component triggering the interaction.</param>
+    void OnInteract(PlayerInteraction interactor);
+
+    /// <summary>
+    /// Called when the player's crosshair looks directly at the object.
+    /// </summary>
+    void OnFocus();
+
+    /// <summary>
+    /// Called when the player's crosshair leaves the object.
+    /// </summary>
+    void OnLoseFocus();
+}
+========================================
+// DATEI: _Interactables\OutlineController.cs
+========================================
+using UnityEngine;
+
+/// <summary>
+/// Controls which layer the object uses so the camera can render proximity vs highlight outlines.
+/// Layers are switched recursively on the whole root object to ensure all child meshes get outlined.
+/// </summary>
+public class OutlineController : MonoBehaviour
+{
+    [Header("Settings")]
+    public float proximityRadius = 5f;
+
+    // Layer indices
+    private int defaultLayer = -1;
+    private int proximityLayer = -1;
+    private int highlightLayer = -1;
+    private int heldItemLayerIndex = -1;
+    private int ignoreRaycastLayer = -1;
+
+    // State cache
+    private PickupInteractable cachedPickup;
+    private bool isHighlighted = false;
+    private bool isInProximity = false;
+    private SphereCollider proximityCollider;
+
+    /// <summary>
+    /// Initializes layer indices and sets up the proximity trigger collider.
+    /// </summary>
+    private void Start()
+    {
+        defaultLayer = LayerMask.NameToLayer("Item");
+        proximityLayer = LayerMask.NameToLayer("OutlineProximity");
+        highlightLayer = LayerMask.NameToLayer("OutlineHighlight");
+        heldItemLayerIndex = LayerMask.NameToLayer("HeldItem");
+        ignoreRaycastLayer = LayerMask.NameToLayer("Ignore Raycast");
+
+        // Cache parent reference
+        cachedPickup = GetComponentInParent<PickupInteractable>();
+
+        // Setup proximity trigger
+        proximityCollider = gameObject.AddComponent<SphereCollider>();
+        proximityCollider.isTrigger = true;
+        proximityCollider.radius = proximityRadius;
+        proximityCollider.gameObject.layer = ignoreRaycastLayer; 
+    }
+
+    /// <summary>
+    /// Detects when the player enters proximity and applies the proximity layer.
+    /// </summary>
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            if (cachedPickup != null && cachedPickup.IsHeld) return;
+            
+            isInProximity = true;
+            if (!isHighlighted) SetLayerRecursive(proximityLayer);
+        }
+    }
+
+    /// <summary>
+    /// Detects when the player leaves proximity and restores the default layer.
+    /// </summary>
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            isInProximity = false;
+            if (!isHighlighted) SetLayerRecursive(defaultLayer);
+        }
+    }
+
+    /// <summary>
+    /// Activates the highlight state (e.g., when the player aims at the object).
+    /// </summary>
+    public void SetToHighlight()
+    {
+        isHighlighted = true;
+        SetLayerRecursive(highlightLayer);
+    }
+
+    /// <summary>
+    /// Reverts the outline to either the proximity state (if near) or default state.
+    /// </summary>
+    public void SetToProximityOrDefault()
+    {
+        isHighlighted = false;
+        SetLayerRecursive(isInProximity ? proximityLayer : defaultLayer);
+    }
+
+    /// <summary>
+    /// Sets the layer specifically for when the object is being held by the player.
+    /// </summary>
+    public void SetToHeld()
+    {
+        isHighlighted = false;
+        SetLayerRecursive(heldItemLayerIndex);
+    }
+
+    /// <summary>
+    /// Completely resets the outline to the default item state.
+    /// </summary>
+    public void SetToDefault()
+    {
+        isHighlighted = false;
+        SetLayerRecursive(isInProximity ? proximityLayer : defaultLayer);
+    }
+
+    /// <summary>
+    /// Recursively applies a layer to this object and all its children.
+    /// </summary>
+    /// <param name="layer">The layer index to apply.</param>
+    private void SetLayerRecursive(int layer)
+    {
+        if (layer < 0) return;
+
+        // Apply to Parent (unless it's the sensor layer)
+        if (gameObject.layer != ignoreRaycastLayer)
+        {
+            gameObject.layer = layer;
+        }
+
+        // Apply to Children
+        foreach (Transform child in transform)
+        {
+            // Safety: Never overwrite the Sensor's layer
+            if (child.gameObject.layer == ignoreRaycastLayer) continue;
+            child.gameObject.layer = layer;
+        }
+    }
+}
+========================================
+// DATEI: _Interactables\Items\ConsumableInteractable.cs
+========================================
+using UnityEngine;
+using FMODUnity;
+
+/// <summary>
+/// A world-space consumable item the player can interact with.
+/// Tries to insert its ConsumableItemData into the player's inventory.
+/// </summary>
+[RequireComponent(typeof(OutlineController))]
+public class ConsumableInteractable : MonoBehaviour, IInteractable
+{
+    [Header("Item Data")]
+    public ConsumableItemData itemData;
+
+    [Header("FMOD Audio")]
+    public EventReference pickupSound;
+
+    private OutlineController outline;
+
+    private void Awake()
+    {
+        outline = GetComponent<OutlineController>();
+    }
+
+    /// <summary>
+    /// Attempts to add this item to the player's inventory on interact.
+    /// </summary>
+    public void OnInteract(PlayerInteraction interactor)
+    {
+        if (itemData == null)
+        {
+            Debug.LogError($"[Consumable] No ItemData assigned to {gameObject.name}!");
+            return;
+        }
+
+        bool wasPickedUp = interactor.TryPickUpConsumable(this.itemData);
+
+        if (wasPickedUp)
+        {
+            if (!pickupSound.IsNull)
+            {
+                RuntimeManager.PlayOneShot(pickupSound, transform.position);
+            }
+            gameObject.SetActive(false);
+        }
+        else
+        {
+            Debug.Log("Inventory full");
+        }
+    }
+
+    public void OnFocus() { if (outline != null) outline.SetToHighlight(); }
+    public void OnLoseFocus() { if (outline != null) outline.SetToProximityOrDefault(); }
+}
+========================================
+// DATEI: _Interactables\Items\ConsumableSO.cs
+========================================
+using UnityEngine;
+using FMODUnity;
+
+/// <summary>
+/// Defines the core data and effects for a consumable item.
+/// Created as a ScriptableObject to allow easy creation of new items in the Unity Editor.
+/// </summary>
+[CreateAssetMenu(fileName = "New Consumable", menuName = "Project/Items/Consumable")]
+public class ConsumableItemData : ScriptableObject
+{
+    [Header("Basic Info")]
+    public string itemName = "New Item";
+    public GameObject modelPrefab;
+
+    [Header("Stat Effects")]
+    public float healthChange = 0f;
+    public float fearChange = 0f;
+    public float purityChange = 0f;
+
+    [Header("Special Flags")]
+    public bool isLighter = false;
+    public bool isPhone = false;
+
+    [Header("FMOD Audio")]
+    public EventReference selectSound;
+    public EventReference useSound;
+
+    /// <summary>
+    /// Applies the stat changes of this item to the provided PlayerStatsManager.
+    /// </summary>
+    /// <param name="stats">The PlayerStatsManager instance to apply effects to.</param>
+    public void ApplyEffects(PlayerStatsManager stats)
+    {
+        if (healthChange != 0) stats.ModifyHealth(healthChange);
+        if (fearChange != 0) stats.ModifyFear(fearChange);
+        if (purityChange != 0) stats.ModifyPurity(purityChange);
+    }
+}
+========================================
+// DATEI: _Interactables\Pickup Place\ItemType.cs
+========================================
+public enum ItemType
+{
+    None,
+    BambooShort,
+    BambooMedium,
+    BambooLarge
+}
+========================================
+// DATEI: _Interactables\Pickup Place\PickupInteractable.cs
+========================================
+using UnityEngine;
+using FMODUnity;
+
+/// <summary>
+/// A physical item in the world that the player can pick up, hold, place, and throw.
+/// Syncs physics states and layer changes with the OutlineController.
+/// </summary>
+[RequireComponent(typeof(Rigidbody))]
+public class PickupInteractable : MonoBehaviour, IInteractable
+{
+    [Header("FMOD Audio")]
+    public EventReference pickupSound;
+
+    [Header("Puzzle Settings")]
+    public ItemType itemType = ItemType.None;
+
+    // Properties
+    public bool IsHeld { get; private set; } = false;
+    public bool IsSlotted { get; private set; } = false;
+
+    // References
+    private OutlineController outline;
+    private Rigidbody rb;
+
+    /// <summary>
+    /// Initializes necessary component references.
+    /// </summary>
+    private void Awake()
+    {
+        outline = GetComponentInChildren<OutlineController>();
+        rb = GetComponent<Rigidbody>();
+    }
+
+    /// <summary>
+    /// Triggers the pickup sequence when interacted with.
+    /// </summary>
+    public void OnInteract(PlayerInteraction interactor)
+    {
+        if (!pickupSound.IsNull)
+        {
+            RuntimeManager.PlayOneShot(pickupSound, transform.position);
+        }
+
+        interactor.PickUpItem(this);
+    }
+
+    /// <summary>
+    /// Highlights the object when looked at, as long as it isn't held.
+    /// </summary>
+    public void OnFocus()
+    {
+        if (!IsHeld && outline != null)
+        {
+            outline.SetToHighlight();
+        }
+    }
+
+    /// <summary>
+    /// Removes the highlight when the player looks away.
+    /// </summary>
+    public void OnLoseFocus()
+    {
+        if (!IsHeld && outline != null)
+        {
+            outline.SetToProximityOrDefault();
+        }
+    }
+
+    /// <summary>
+    /// Toggles the physics and outline states based on whether the object is currently held.
+    /// </summary>
+    /// <param name="held">True if held, false if dropped.</param>
+    public void SetHeld(bool held)
+    {
+        IsHeld = held;
+
+        // Manage Physics
+        if (rb != null)
+        {
+            rb.isKinematic = held;
+            rb.useGravity = !held;
+        }
+
+        // Manage Visuals
+        if (outline != null)
+        {
+            if (held) outline.SetToHeld();
+            else outline.SetToDefault();
+        }
+        else
+        {
+            // Fallback
+            SetRootLayerByName(held ? "HeldItem" : "Item");
+        }
+    }
+
+    /// <summary>
+    /// Marks the item as slotted in a puzzle and resets its visual state.
+    /// </summary>
+    /// <param name="slotted">True if placed in a slot.</param>
+    public void SetSlotted(bool slotted)
+    {
+        IsSlotted = slotted;
+
+        if (outline != null)
+        {
+            outline.SetToDefault();
+        }
+        else
+        {
+            SetRootLayerByName("Item");
+        }
+    }
+
+    /// <summary>
+    /// Helper method to set the layer by name if no OutlineController is present.
+    /// </summary>
+    private void SetRootLayerByName(string layerName)
+    {
+        int idx = LayerMask.NameToLayer(layerName);
+        if (idx < 0) return;
+
+        Transform root = transform.root != null ? transform.root : transform;
+        
+        foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
+        {
+            if (child.gameObject.layer != LayerMask.NameToLayer("Ignore Raycast"))
+            {
+                child.gameObject.layer = idx;
+            }
+        }
+    }
+}
+========================================
+// DATEI: _Interactables\Pickup Place\PlaceSlot.cs
+========================================
+using UnityEngine;
+using FMODUnity;
+
+/// <summary>
+/// A specific slot in the world that can accept a PickupInteractable item.
+/// Handles positioning, snapping, and checking for correct item types.
+/// </summary>
+public class PlaceSlot : MonoBehaviour, IInteractable
+{
+    [Header("FMOD Audio")]
+    public EventReference interactSound; // Renamed to fit both pick/place actions
+
+    [Header("Slot Transforms")]
+    [Tooltip("Visual preview transform (position + rotation) for held items.")]
+    public Transform previewPoint;
+    [Tooltip("Final locked transform when the item is officially placed.")]
+    public Transform slotPoint;
+
+    [Header("Settings")]
+    public bool allowPreviewRotation = true;
+    public ItemType requiredType = ItemType.None;
+
+    // Internal state
+    private PickupInteractable placedItem;
+    private OutlineController outline;
+
+    /// <summary>
+    /// Checks if the slot currently holds an item matching the required type.
+    /// </summary>
+    /// <returns>True if the correct item is slotted.</returns>
+    public bool HasCorrectItem()
+    {
+        return placedItem != null && placedItem.itemType == requiredType;
+    }
+
+    private void Awake()
+    {
+        outline = GetComponent<OutlineController>();
+    }
+
+    /// <summary>
+    /// Triggered when the player interacts with this slot.
+    /// Handles placing or taking the item depending on context.
+    /// </summary>
+    public void OnInteract(PlayerInteraction interactor)
+    {
+        // Add your interaction logic here (e.g., calling PlaceItem or RemoveItem)
+        // This will be triggered by your new PlayerInteraction script.
+    }
+
+    public void OnFocus() { if (outline != null) outline.SetToHighlight(); }
+    public void OnLoseFocus() { if (outline != null) outline.SetToProximityOrDefault(); }
+
+    /// <summary>
+    /// Locks the provided item into this slot, updating its physics and layer state.
+    /// </summary>
+    /// <param name="item">The item to be placed.</param>
+    public void PlaceItem(PickupInteractable item)
+    {
+        if (item == null) return;
+
+        Transform t = item.transform;
+        t.position = slotPoint.position;
+        t.rotation = slotPoint.rotation;
+
+        Rigidbody rb = item.GetComponent<Rigidbody>();
+        if (rb != null)
+        {
+            rb.isKinematic = true;
+            rb.useGravity = false;
+        }
+
+        item.SetHeld(false);
+        placedItem = item;
+        item.SetSlotted(true);
+
+        // Restore default layer 
+        int defaultLayer = LayerMask.NameToLayer("Default") >= 0 ? LayerMask.NameToLayer("Default") : 3;
+        t.gameObject.layer = defaultLayer;
+
+        if (!interactSound.IsNull) RuntimeManager.PlayOneShot(interactSound, transform.position);
+    }
+
+    /// <summary>
+    /// Removes the currently placed item from the slot so the player can take it back.
+    /// </summary>
+    /// <returns>The removed item, or null if the slot was empty.</returns>
+    public PickupInteractable RemoveItem()
+    {
+        if (placedItem == null) return null;
+
+        if (!interactSound.IsNull) RuntimeManager.PlayOneShot(interactSound, transform.position);
+
+        PickupInteractable item = placedItem;
+        item.SetSlotted(false);
+        placedItem = null;
+
+        return item;
+    }
+}
+========================================
+// DATEI: _Player\PlayerStatsManager.cs
+========================================
+using UnityEngine;
+using UnityEngine.Events;
+using FMODUnity;
+
+/// <summary>
+/// Manages the core physical and mental attributes of the player (Health, Stamina, Fear, Purity).
+/// Acts as the central hub for stat modifications.
+/// </summary>
+public class PlayerStatsManager : MonoBehaviour
+{
+    [Header("Configuration")]
+    public float maxHealth = 100f;
+    public float maxStamina = 100f;
+    public float maxFear = 100f;
+    public float maxPurity = 100f;
+
+    [Header("Stamina Regeneration")]
+    public bool regenerateStamina = true;
+    public float staminaRegenRate = 15f;
+    public float staminaDrainRate = 20f;
+
+    [Header("Audio")]
+    public EventReference staminaDepletedSound;
+    public EventReference fearUpSound;
+
+    // --- Current Values ---
+    public float CurrentHealth { get; private set; }
+    public float CurrentStamina { get; private set; }
+    public float CurrentFear { get; private set; }
+    public float CurrentPurity { get; private set; }
+
+    // --- Events ---
+    public UnityEvent<float> OnHealthChanged;
+    public UnityEvent<float> OnStaminaChanged;
+    public UnityEvent<float> OnFearChanged;
+    public UnityEvent<float> OnPurityChanged;
+
+    private bool hasPlayedStaminaEmptySound = false;
+
+    /// <summary>
+    /// Initializes all stats to their maximum/default values on startup.
+    /// </summary>
+    private void Start()
+    {
+        CurrentHealth = maxHealth;
+        CurrentStamina = maxStamina;
+        CurrentFear = 0f;
+        CurrentPurity = 100f;
+        
+        UpdateAllEvents();
+    }
+
+    /// <summary>
+    /// Handles continuous logic like stamina regeneration.
+    /// </summary>
+    private void Update()
+    {
+        HandleStaminaRegen();
+    }
+
+    /// <summary>
+    /// Modifies the player's health by the given amount and clamps it.
+    /// </summary>
+    /// <param name="amount">Positive to heal, negative to damage.</param>
+    public void ModifyHealth(float amount)
+    {
+        CurrentHealth = Mathf.Clamp(CurrentHealth + amount, 0, maxHealth);
+        OnHealthChanged?.Invoke(CurrentHealth / maxHealth);
+
+        if (CurrentHealth <= 0)
+        {
+            Die();
+        }
+    }
+
+    /// <summary>
+    /// Modifies the player's fear level and checks for threshold events.
+    /// </summary>
+    /// <param name="amount">Positive to increase fear, negative to reduce.</param>
+    public void ModifyFear(float amount)
+    {
+        float oldFear = CurrentFear;
+        CurrentFear = Mathf.Clamp(CurrentFear + amount, 0, maxFear);
+        OnFearChanged?.Invoke(CurrentFear / maxFear);
+
+        // Check for 15-step threshold to play sound
+        if (amount > 0)
+        {
+            int stepSize = 15;
+            int oldStep = (int)(oldFear / stepSize);
+            int newStep = (int)(CurrentFear / stepSize);
+
+            if (newStep > oldStep && !fearUpSound.IsNull)
+            {
+                RuntimeManager.PlayOneShot(fearUpSound);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Modifies the player's purity level.
+    /// </summary>
+    /// <param name="amount">Positive to restore, negative to reduce.</param>
+    public void ModifyPurity(float amount)
+    {
+        CurrentPurity = Mathf.Clamp(CurrentPurity + amount, 0, maxPurity);
+        OnPurityChanged?.Invoke(CurrentPurity / maxPurity);
+    }
+
+    /// <summary>
+    /// Checks if the player has enough stamina for an action.
+    /// </summary>
+    /// <param name="amount">The required stamina.</param>
+    /// <returns>True if stamina is sufficient, false otherwise.</returns>
+    public bool HasStamina(float amount) => CurrentStamina >= amount;
+
+    /// <summary>
+    /// Drains stamina by the specified amount and handles depletion audio.
+    /// </summary>
+    /// <param name="amount">The amount of stamina to drain.</param>
+    public void UseStamina(float amount)
+    {
+        CurrentStamina -= amount;
+        if (CurrentStamina <= 0)
+        {
+            CurrentStamina = 0;
+            if (!hasPlayedStaminaEmptySound && !staminaDepletedSound.IsNull)
+            {
+                RuntimeManager.PlayOneShot(staminaDepletedSound);
+                hasPlayedStaminaEmptySound = true;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Regenerates stamina over time if allowed.
+    /// </summary>
+    private void HandleStaminaRegen()
+    {
+        if (regenerateStamina && CurrentStamina < maxStamina)
+        {
+            CurrentStamina = Mathf.Clamp(CurrentStamina + (staminaRegenRate * Time.deltaTime), 0, maxStamina);
+        }
+
+        if (CurrentStamina > 5f)
+        {
+            hasPlayedStaminaEmptySound = false;
+        }
+    }
+
+    /// <summary>
+    /// Triggers the death sequence for the player.
+    /// </summary>
+    private void Die()
+    {
+        Debug.Log("[PlayerStatsManager] Player Died.");
+        // TODO: Implement actual death logic or signal a GameManager
+    }
+
+    /// <summary>
+    /// Forces UI updates for all stats. Useful after loading a save file.
+    /// </summary>
+    public void UpdateAllEvents()
+    {
+        OnHealthChanged?.Invoke(CurrentHealth / maxHealth);
+        OnStaminaChanged?.Invoke(CurrentStamina / maxStamina);
+        OnFearChanged?.Invoke(CurrentFear / maxFear);
+        OnPurityChanged?.Invoke(CurrentPurity / maxPurity);
+    }
+}
+========================================
+// DATEI: _Player\Interaction\InteractionScanner.cs
+========================================
+using UnityEngine;
+
+/// <summary>
+/// Scans the environment using a raycast from the camera to find IInteractable objects.
+/// Automatically handles OnFocus() and OnLoseFocus() events.
+/// </summary>
+public class InteractionScanner : MonoBehaviour
+{
+    [Header("Scanner Settings")]
+    public Transform cameraTransform;
+    public float interactionDistance = 3f;
+    public LayerMask interactLayer;
+
+    // The currently looked at interactable object
+    public IInteractable CurrentTarget { get; private set; }
+
+    /// <summary>
+    /// Fallback to main camera if no transform is assigned.
+    /// </summary>
+    private void Start()
+    {
+        if (cameraTransform == null && Camera.main != null)
+        {
+            cameraTransform = Camera.main.transform;
+        }
+    }
+
+    /// <summary>
+    /// Fires a raycast every frame to detect interactables.
+    /// </summary>
+    private void Update()
+    {
+        PerformScan();
+    }
+
+    /// <summary>
+    /// Casts a ray and updates the CurrentTarget, triggering focus events.
+    /// </summary>
+    private void PerformScan()
+    {
+        if (cameraTransform == null) return;
+
+        Ray ray = new Ray(cameraTransform.position, cameraTransform.forward);
+        
+        if (Physics.Raycast(ray, out RaycastHit hit, interactionDistance, interactLayer))
+        {
+            IInteractable interactable = hit.collider.GetComponent<IInteractable>();
+
+            if (interactable != null)
+            {
+                // If we look at a NEW object
+                if (interactable != CurrentTarget)
+                {
+                    CurrentTarget?.OnLoseFocus();
+                    CurrentTarget = interactable;
+                    CurrentTarget.OnFocus();
+                }
+            }
+            else
+            {
+                ClearTarget();
+            }
+        }
+        else
+        {
+            ClearTarget();
+        }
+    }
+
+    /// <summary>
+    /// Clears the current target and calls OnLoseFocus.
+    /// </summary>
+    private void ClearTarget()
+    {
+        if (CurrentTarget != null)
+        {
+            CurrentTarget.OnLoseFocus();
+            CurrentTarget = null;
+        }
+    }
+}
+========================================
+// DATEI: _Player\Interaction\PlayerInteraction.cs
+========================================
+using UnityEngine;
+using UnityEngine.InputSystem; // WICHTIG: Neues Input System
+
+/// <summary>
+/// Handles player input for interactions, tools, and manages held physical items.
+/// Routes inputs from PlayerControls to the Scanner and EquipmentManager.
+/// </summary>
+public class PlayerInteraction : MonoBehaviour
+{
+    [Header("System References")]
+    public InteractionScanner scanner;
+    public PlayerEquipmentManager equipmentManager;
+
+    [Header("Physical Holding Settings")]
+    public Transform holdPoint;
+    public float throwForce = 10f;
+    public float holdSmoothSpeed = 10f;
+
+    // The currently held object
+    private PickupInteractable currentHeldItem;
+    
+    // Input System Reference
+    private PlayerControls controls;
+
+    /// <summary>
+    /// Initializes the input system and binds the actions.
+    /// </summary>
+    private void Awake()
+    {
+        controls = new PlayerControls();
+        
+        // Interact (E)
+        controls.Player.Interact.performed += ctx => HandleInteract();
+
+        // Right Click (Consume)
+        controls.Player.Consume.performed += ctx => HandleSecondaryAction();
+
+        // Inventory Slots (1 & 2)
+        controls.Player.Slot1.performed += ctx => equipmentManager?.SelectSlot(0);
+        controls.Player.Slot2.performed += ctx => equipmentManager?.SelectSlot(1);
+
+        // Tools (F & Space)
+        controls.Player.EquipLighter.performed += ctx => equipmentManager?.ToggleLighterMode();
+        controls.Player.EquipPhone.performed += ctx => equipmentManager?.TogglePhoneMode();
+    }
+
+    private void OnEnable() => controls.Enable();
+    private void OnDisable() => controls.Disable();
+
+    /// <summary>
+    /// Updates the held item position and checks for unmapped inputs (like Left Click).
+    /// </summary>
+    private void Update()
+    {
+        UpdateHeldItemPosition();
+
+        // Fallback for Left Click (Primary Action: Throw / Use Item)
+        // Since it's not explicitly in your PlayerControls action map
+        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+        {
+            HandlePrimaryAction();
+        }
+    }
+
+    /// <summary>
+    /// Called when the Interact key (E) is pressed.
+    /// </summary>
+    private void HandleInteract()
+    {
+        if (currentHeldItem != null)
+        {
+            DropItem();
+        }
+        else if (scanner != null && scanner.CurrentTarget != null)
+        {
+            scanner.CurrentTarget.OnInteract(this);
+        }
+    }
+
+    /// <summary>
+    /// Called on Left Click. Throws a held object or consumes the selected item.
+    /// </summary>
+    private void HandlePrimaryAction()
+    {
+        if (currentHeldItem != null)
+        {
+            ThrowItem();
+        }
+        else if (equipmentManager != null)
+        {
+            // Note: If you want right-click to consume instead, move this to HandleSecondaryAction
+            equipmentManager.ConsumeSelectedSlot();
+        }
+    }
+
+    /// <summary>
+    /// Called on Right Click. Drops a held object.
+    /// </summary>
+    private void HandleSecondaryAction()
+    {
+        if (currentHeldItem != null)
+        {
+            DropItem();
+        }
+    }
+
+    /// <summary>
+    /// Smoothly moves the held physics object to the hold point.
+    /// </summary>
+    private void UpdateHeldItemPosition()
+    {
+        if (currentHeldItem != null && holdPoint != null)
+        {
+            currentHeldItem.transform.position = Vector3.Lerp(currentHeldItem.transform.position, holdPoint.position, Time.deltaTime * holdSmoothSpeed);
+        }
+    }
+
+    /// <summary>
+    /// Sets the provided item as the currently held physics object.
+    /// </summary>
+    public void PickUpItem(PickupInteractable item)
+    {
+        if (currentHeldItem != null) DropItem();
+
+        currentHeldItem = item;
+        currentHeldItem.SetHeld(true);
+    }
+
+    /// <summary>
+    /// Drops the currently held physics item back into the world.
+    /// </summary>
+    private void DropItem()
+    {
+        if (currentHeldItem == null) return;
+
+        currentHeldItem.SetHeld(false);
+        currentHeldItem = null;
+    }
+
+    /// <summary>
+    /// Applies forward force to the currently held physics item.
+    /// </summary>
+    private void ThrowItem()
+    {
+        if (currentHeldItem == null) return;
+
+        Rigidbody rb = currentHeldItem.GetComponent<Rigidbody>();
+        currentHeldItem.SetHeld(false);
+        currentHeldItem = null;
+
+        if (rb != null && scanner.cameraTransform != null)
+        {
+            rb.AddForce(scanner.cameraTransform.forward * throwForce, ForceMode.Impulse);
+        }
+    }
+
+    /// <summary>
+    /// Attempts to store a consumable in the inventory using the EquipmentManager.
+    /// </summary>
+    public bool TryPickUpConsumable(ConsumableItemData itemData)
+    {
+        if (equipmentManager != null)
+        {
+            return equipmentManager.AddConsumable(itemData);
+        }
+        return false;
+    }
+}
+========================================
+// DATEI: _Player\Items\PlayerEquipmentManager.cs
+========================================
+using UnityEngine;
+using UnityEngine.Events;
+using FMODUnity;
+using FMOD.Studio;
+
+/// <summary>
+/// Defines the current active equipment mode of the player.
+/// </summary>
+public enum EquipmentMode
+{
+    Inventory = 0,
+    Lighter = 1,
+    Phone = 2
+}
+
+/// <summary>
+/// Manages the player's 2-slot inventory, active equipment mode (Lighter/Phone), and item consumption.
+/// Replaces the inventory logic from the old PlayerStats script.
+/// </summary>
+public class PlayerEquipmentManager : MonoBehaviour
+{
+    [Header("References")]
+    [Tooltip("Reference to the player's stats manager to apply item effects.")]
+    public PlayerStatsManager statsManager;
+
+    [Header("Global Audio")]
+    public EventReference modeSwitchSound;
+
+    [Header("State")]
+    public EquipmentMode currentMode = EquipmentMode.Inventory;
+    
+    [Header("Tool Data")]
+    public ConsumableItemData lighterItemData;
+    public ConsumableItemData phoneItemData;
+    
+    // The inventory array holding our new ScriptableObjects
+    private ConsumableItemData[] inventory = new ConsumableItemData[2];
+    
+    // -1 = None, 0 = Left Hand (Slot 1), 1 = Right Hand (Slot 2)
+    private int selectedSlotIndex = -1;
+    private bool areHandsActive = true;
+
+    // FMOD Audio Instance for looping selection sounds (like a radio)
+    private EventInstance currentSelectionSoundInstance;
+
+    // --- Events ---
+    // Now passes the ScriptableObject instead of the old Enum!
+    public UnityEvent<int, ConsumableItemData> OnInventoryChanged; 
+    public UnityEvent<int> OnSlotSelected;
+
+    /// <summary>
+    /// Initializes the inventory setup on start.
+    /// </summary>
+    private void Start()
+    {
+        if (statsManager == null)
+        {
+            statsManager = GetComponent<PlayerStatsManager>();
+        }
+        
+        // Ensure UI and visuals are updated to empty on start
+        UpdateVisualsForCurrentMode();
+    }
+
+    /// <summary>
+    /// Stops any looping audio when the script is disabled or destroyed.
+    /// </summary>
+    private void OnDisable()
+    {
+        StopSelectionSound();
+    }
+
+    /// <summary>
+    /// Adds a consumable item to the first available slot.
+    /// </summary>
+    /// <param name="itemData">The ScriptableObject data of the item.</param>
+    /// <returns>True if successfully added, false if inventory is full.</returns>
+    public bool AddConsumable(ConsumableItemData itemData)
+    {
+        for (int i = 0; i < inventory.Length; i++)
+        {
+            if (inventory[i] == null)
+            {
+                inventory[i] = itemData;
+                Debug.Log($"[EquipmentManager] Added {itemData.itemName} to Slot {i + 1}");
+                
+                OnInventoryChanged?.Invoke(i, itemData);
+                SelectSlot(i); // Auto-select the picked up item
+                
+                return true;
+            }
+        }
+
+        Debug.Log("[EquipmentManager] Inventory Full!");
+        return false;
+    }
+
+    /// <summary>
+    /// Selects a specific inventory slot and plays its selection sound.
+    /// </summary>
+    /// <param name="index">The slot index (0 or 1).</param>
+    public void SelectSlot(int index)
+    {
+        if (currentMode != EquipmentMode.Inventory)
+        {
+            SetMode(EquipmentMode.Inventory);
+        }
+
+        StopSelectionSound();
+
+        // If clicking the same slot, deselect it
+        if (selectedSlotIndex == index)
+        {
+            selectedSlotIndex = -1;
+            Debug.Log($"[EquipmentManager] Deselected Slot {index + 1}");
+        }
+        else
+        {
+            selectedSlotIndex = index;
+            ConsumableItemData itemInSlot = inventory[index];
+
+            if (itemInSlot != null)
+            {
+                Debug.Log($"[EquipmentManager] Selected Slot {index + 1}. Item: {itemInSlot.itemName}");
+                PlaySelectionSound(itemInSlot);
+            }
+        }
+
+        OnSlotSelected?.Invoke(selectedSlotIndex);
+    }
+
+    /// <summary>
+    /// Consumes the currently selected item, applies its effects, and clears the slot.
+    /// </summary>
+    /// <returns>The consumed item data, or null if nothing was consumed.</returns>
+    public ConsumableItemData ConsumeSelectedSlot()
+    {
+        if (!areHandsActive || selectedSlotIndex == -1) return null;
+
+        ConsumableItemData item = inventory[selectedSlotIndex];
+
+        if (item != null)
+        {
+            StopSelectionSound();
+
+            // Play the item's specific use sound
+            if (!item.useSound.IsNull)
+            {
+                RuntimeManager.PlayOneShot(item.useSound, transform.position);
+            }
+
+            // Apply effects via the ScriptableObject
+            if (statsManager != null)
+            {
+                item.ApplyEffects(statsManager);
+            }
+
+            // Clear the slot
+            inventory[selectedSlotIndex] = null;
+            OnInventoryChanged?.Invoke(selectedSlotIndex, null);
+            
+            Debug.Log($"[EquipmentManager] Consumed {item.itemName}");
+            return item;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Switches the active equipment mode (Inventory, Lighter, Phone).
+    /// </summary>
+    /// <param name="newMode">The mode to switch to.</param>
+    public void SetMode(EquipmentMode newMode)
+    {
+        if (currentMode == newMode) return;
+        
+        StopSelectionSound();
+        currentMode = newMode;
+
+        if (!modeSwitchSound.IsNull)
+        {
+            RuntimeManager.PlayOneShot(modeSwitchSound);
+        }
+
+        UpdateVisualsForCurrentMode();
+    }
+
+    /// <summary>
+    /// Toggles the lighter mode on and off.
+    /// </summary>
+    public void ToggleLighterMode()
+    {
+        if (!areHandsActive) return;
+        SetMode(currentMode == EquipmentMode.Lighter ? EquipmentMode.Inventory : EquipmentMode.Lighter);
+    }
+
+    /// <summary>
+    /// Toggles the phone mode on and off.
+    /// </summary>
+    public void TogglePhoneMode()
+    {
+        if (!areHandsActive) return;
+        SetMode(currentMode == EquipmentMode.Phone ? EquipmentMode.Inventory : EquipmentMode.Phone);
+    }
+
+    /// <summary>
+    /// Fires events to update UI and Hand Visuals based on the current mode.
+    /// </summary>
+    public void UpdateVisualsForCurrentMode()
+    {
+        if (!areHandsActive)
+        {
+            OnInventoryChanged?.Invoke(0, null);
+            OnInventoryChanged?.Invoke(1, null);
+            OnSlotSelected?.Invoke(-1);
+            return;
+        }
+
+        switch (currentMode)
+        {
+            case EquipmentMode.Inventory:
+                OnInventoryChanged?.Invoke(0, inventory[0]);
+                OnInventoryChanged?.Invoke(1, inventory[1]);
+                OnSlotSelected?.Invoke(selectedSlotIndex);
+                break;
+
+            case EquipmentMode.Lighter:
+                // Spawns the lighter in the right hand
+                OnInventoryChanged?.Invoke(0, null);
+                OnInventoryChanged?.Invoke(1, lighterItemData);
+                OnSlotSelected?.Invoke(-1); 
+                break;
+
+            case EquipmentMode.Phone:
+                // Spawns the phone in the right hand
+                OnInventoryChanged?.Invoke(0, null);
+                OnInventoryChanged?.Invoke(1, phoneItemData);
+                OnSlotSelected?.Invoke(-1); 
+                break;
+        }
+    }
+    
+    /// <summary>
+    /// Enables or disables the player's hands (e.g., during cutscenes or specific puzzles).
+    /// </summary>
+    /// <param name="active">True to show hands, false to hide.</param>
+    public void SetHandsActive(bool active)
+    {
+        areHandsActive = active;
+
+        if (active)
+        {
+            UpdateVisualsForCurrentMode();
+        }
+        else
+        {
+            StopSelectionSound();
+            OnInventoryChanged?.Invoke(0, null);
+            OnInventoryChanged?.Invoke(1, null);
+            OnSlotSelected?.Invoke(-1);
+        }
+    }
+
+    /// <summary>
+    /// Plays the specific selection sound defined in the item's ScriptableObject.
+    /// </summary>
+    /// <param name="item">The selected item data.</param>
+    private void PlaySelectionSound(ConsumableItemData item)
+    {
+        if (item.selectSound.IsNull) return;
+
+        currentSelectionSoundInstance = RuntimeManager.CreateInstance(item.selectSound);
+        currentSelectionSoundInstance.start();
+        // We do not release here, so we can stop looping sounds (like a radio) later
+    }
+
+    /// <summary>
+    /// Stops the currently playing selection sound (if any).
+    /// </summary>
+    private void StopSelectionSound()
+    {
+        if (currentSelectionSoundInstance.isValid())
+        {
+            currentSelectionSoundInstance.stop(FMOD.Studio.STOP_MODE.ALLOWFADEOUT);
+            currentSelectionSoundInstance.release();
+        }
+    }
+}
+========================================
+// DATEI: _Player\Items\PlayerHandVisuals.cs
+========================================
+using UnityEngine;
+using System.Collections;
+
+/// <summary>
+/// Handles the visual representation of items in the player's hands.
+/// Smoothly moves hands and swaps meshes based on equipment events.
+/// </summary>
+public class PlayerHandVisuals : MonoBehaviour
+{
+    [Header("Hand Transforms")]
+    public Transform leftHandSlot;
+    public Transform rightHandSlot;
+
+    [Header("Highlight Settings")]
+    public Vector3 selectionOffset = new Vector3(-0.1f, 0.1f, 0.2f);
+    public bool mirrorXForLeftHand = true; 
+    public float movementSmoothing = 10f;
+
+    [Header("Swap Animation")]
+    public float dropAmount = 1f;
+    public float swapSpeed = 8f;
+    public float swapDelay = 0.15f;
+
+    [Header("Phone Watch Settings")]
+    [Tooltip("Offset of the default position, when the player is right clicking.")]
+    public Vector3 phoneWatchOffset = new Vector3(-0.2f, 0.1f, 0.1f);
+    
+    // --- State ---
+    private bool isWatchingPhone = false;
+    private Vector3 leftStartPos;
+    private Vector3 rightStartPos;
+    private int currentSelectionIndex = -1;
+    private float currentDropOffset = 0f;
+    private float targetDropOffset = 0f;
+
+    /// <summary>
+    /// Initializes start positions and subscribes to equipment events.
+    /// </summary>
+    private void Awake()
+    {
+        if (leftHandSlot != null) leftStartPos = leftHandSlot.localPosition;
+        if (rightHandSlot != null) rightStartPos = rightHandSlot.localPosition;
+
+        PlayerEquipmentManager equipment = GetComponent<PlayerEquipmentManager>();
+
+        if (equipment != null)
+        {
+            // Now listening to the new events with ConsumableItemData!
+            equipment.OnInventoryChanged.AddListener(OnInventoryChangedReceived);
+            equipment.OnSlotSelected.AddListener(OnSlotSelectionChanged);
+        }
+        else
+        {
+            Debug.LogError("[PlayerHandVisuals] Could not find PlayerEquipmentManager script!");
+        }
+    }
+
+    /// <summary>
+    /// Updates hand positions smoothly every frame.
+    /// </summary>
+    private void Update()
+    {
+        currentDropOffset = Mathf.Lerp(currentDropOffset, targetDropOffset, Time.deltaTime * swapSpeed);
+
+        MoveHand(leftHandSlot, GetTargetPosition(0), Time.deltaTime * movementSmoothing);
+        MoveHand(rightHandSlot, GetTargetPosition(1), Time.deltaTime * movementSmoothing);
+    }
+
+    /// <summary>
+    /// Toggles the viewing state of the phone, applying a special offset.
+    /// </summary>
+    public void SetPhoneWatchActive(bool active)
+    {
+        isWatchingPhone = active;
+    }
+
+    /// <summary>
+    /// Calculates the target local position for a given hand.
+    /// </summary>
+    private Vector3 GetTargetPosition(int handIndex)
+    {
+        Vector3 basePos = (handIndex == 0) ? leftStartPos : rightStartPos;
+        Vector3 finalPos = basePos;
+
+        if (handIndex == 0)
+        {
+            if (currentSelectionIndex == 0)
+            {
+                Vector3 finalOffset = selectionOffset;
+                if (mirrorXForLeftHand) finalOffset.x = -finalOffset.x; 
+                finalPos += finalOffset;
+            }
+        }
+        else
+        {
+            if (isWatchingPhone)
+            {
+                finalPos += phoneWatchOffset;
+            }
+            else if (currentSelectionIndex == 1)
+            {
+                finalPos += selectionOffset;
+            }
+        }
+        
+        finalPos += Vector3.down * (currentDropOffset * dropAmount);
+        return finalPos;
+    }
+
+    /// <summary>
+    /// Smoothly interpolates the hand transform towards the target position.
+    /// </summary>
+    private void MoveHand(Transform hand, Vector3 targetPos, float step)
+    {
+        if (hand == null) return;
+        hand.localPosition = Vector3.Lerp(hand.localPosition, targetPos, step);
+    }
+
+    /// <summary>
+    /// Updates the current selection index when the slot changes.
+    /// </summary>
+    private void OnSlotSelectionChanged(int newIndex)
+    {
+        currentSelectionIndex = newIndex;
+    }
+
+    /// <summary>
+    /// Triggers the swap animation coroutine when inventory data changes.
+    /// </summary>
+    public void OnInventoryChangedReceived(int slotIndex, ConsumableItemData newItemData)
+    {
+        StartCoroutine(SwapRoutine(slotIndex, newItemData));
+    }
+
+    /// <summary>
+    /// Handles the timing of the visual swap (dropping hand, swapping, raising hand).
+    /// </summary>
+    private IEnumerator SwapRoutine(int slotIndex, ConsumableItemData newItemData)
+    {
+        targetDropOffset = 1f;
+        yield return new WaitForSeconds(swapDelay);
+        
+        PerformMeshSwap(slotIndex, newItemData);
+        
+        yield return new WaitForSeconds(0.05f);
+        targetDropOffset = 0f;
+    }
+
+    /// <summary>
+    /// Destroys the old mesh and instantiates the new prefab directly from the ScriptableObject.
+    /// </summary>
+    private void PerformMeshSwap(int slotIndex, ConsumableItemData newItemData)
+    {
+        Transform targetHand = (slotIndex == 0) ? leftHandSlot : rightHandSlot;
+        if (targetHand == null) return;
+
+        foreach (Transform child in targetHand) 
+        {
+            Destroy(child.gameObject);
+        }
+
+        // If data is null or has no model, we just leave the hand empty
+        if (newItemData == null || newItemData.modelPrefab == null) return;
+
+        GameObject newObj = Instantiate(newItemData.modelPrefab, targetHand);
+        newObj.transform.localPosition = Vector3.zero;
+        newObj.transform.localRotation = Quaternion.identity;
+
+        int fpLayer = LayerMask.NameToLayer("FirstPerson");
+        if (fpLayer == -1) fpLayer = LayerMask.NameToLayer("Ignore Raycast");
+
+        SetLayerRecursive(newObj, fpLayer);
+    }
+
+    /// <summary>
+    /// Recursively sets the layer of a GameObject and all its children.
+    /// </summary>
+    private void SetLayerRecursive(GameObject obj, int layer)
+    {
+        obj.layer = layer;
+        foreach (Transform child in obj.transform) 
+        {
+            SetLayerRecursive(child.gameObject, layer);
+        }
+    }
+}
+========================================
+// DATEI: _Player\PlayerControls\HeadBob.cs
+========================================
+using UnityEngine;
+
+/// <summary>
+/// Handles camera head-bob animation while walking, sprinting, or crouching.
+/// Automatically adjusts base height and applies a Figure-8 motion.
+/// </summary>
+public class HeadBob : MonoBehaviour
+{
+    [Header("Base Settings")]
+    public float standCameraY = 1.6f;
+    public float crouchCameraY = 0.9f;
+    public float heightChangeSpeed = 8f;
+
+    [Header("Walk Bob Settings")]
+    public float bobSpeed = 14f;
+    public float bobAmountX = 0.05f;
+    public float bobAmountY = 0.05f;
+
+    [Header("Sprint Bob Settings")]
+    public float sprintBobSpeedMultiplier = 1.6f;
+    public float sprintBobAmountMultiplier = 1.8f;
+
+    [Header("Crouch Bob Settings")]
+    public float crouchBobSpeedMultiplier = 0.6f;
+    public float crouchBobAmountMultiplier = 0.5f;
+
+    [Header("References")]
+    public PlayerMovement playerMovement;
+
+    private float defaultXPos = 0f;
+    private float timer = 0f;
+
+    /// <summary>
+    /// Stores the initial X position of the camera to center the bobbing.
+    /// </summary>
+    private void Start()
+    {
+        defaultXPos = transform.localPosition.x;
+    }
+
+    /// <summary>
+    /// Calculates and applies the camera position offsets every frame.
+    /// </summary>
+    private void Update()
+    {
+        if (playerMovement == null) return;
+
+        Vector3 localPos = transform.localPosition;
+
+        // Base Height Transition (Crouch vs Stand)
+        float targetBaseY = playerMovement.IsCrouching() ? crouchCameraY : standCameraY;
+        float currentBaseY = Mathf.Lerp(localPos.y, targetBaseY, Time.deltaTime * heightChangeSpeed);
+
+        if (playerMovement.IsMoving())
+        {
+            float speed = bobSpeed;
+            float amountX = bobAmountX;
+            float amountY = bobAmountY;
+
+            // Apply Multipliers
+            if (playerMovement.IsCrouching())
+            {
+                speed *= crouchBobSpeedMultiplier;
+                amountX *= crouchBobAmountMultiplier;
+                amountY *= crouchBobAmountMultiplier;
+            }
+            else if (playerMovement.IsRunning())
+            {
+                speed *= sprintBobSpeedMultiplier;
+                amountX *= sprintBobAmountMultiplier;
+                amountY *= sprintBobAmountMultiplier;
+            }
+
+            timer += Time.deltaTime * speed;
+
+            // Apply Figure-8 motion
+            localPos.y = currentBaseY + Mathf.Sin(timer) * amountY;
+            localPos.x = defaultXPos + Mathf.Cos(timer / 2f) * amountX;
+        }
+        else
+        {
+            // Smoothly return to center when stopped
+            timer = 0f;
+            localPos.y = Mathf.Lerp(localPos.y, currentBaseY, Time.deltaTime * 5f);
+            localPos.x = Mathf.Lerp(localPos.x, defaultXPos, Time.deltaTime * 5f);
+        }
+
+        transform.localPosition = localPos;
+    }
+}
+========================================
+// DATEI: _Player\PlayerControls\PlayerLook.cs
+========================================
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+/// <summary>
+/// Handles mouse look for the player camera using the new Input System.
+/// Can be toggled off (e.g., used in focus mode).
+/// </summary>
+public class PlayerLook : MonoBehaviour
+{
+    [Tooltip("If false, camera look is disabled. Useful while inspecting an object.")]
+    public bool lookEnabled = true;
+
+    [Header("Settings")]
+    public float sensitivity = 2f;
+    public Transform playerBody;
+
+    private PlayerControls controls;
+    private Vector2 lookInput;
+    private float xRotation = 0f;
+    private float normalizedScale = 200f;
+
+    /// <summary>
+    /// Initializes the new Input System controls.
+    /// </summary>
+    private void Awake()
+    {
+        controls = new PlayerControls();
+    }
+
+    /// <summary>
+    /// Enables the input controls.
+    /// </summary>
+    private void OnEnable()
+    {
+        controls.Enable();
+    }
+
+    /// <summary>
+    /// Disables the input controls.
+    /// </summary>
+    private void OnDisable()
+    {
+        controls.Disable();
+    }
+    
+    /// <summary>
+    /// Reads input and rotates the camera and player body if look is enabled.
+    /// </summary>
+    private void Update()
+    {
+        if (!lookEnabled) return;
+
+        lookInput = controls.Player.Look.ReadValue<Vector2>();
+        Vector2 normalizedLookInput = (lookInput / normalizedScale) * sensitivity;
+
+        xRotation -= normalizedLookInput.y;
+        xRotation = Mathf.Clamp(xRotation, -90f, 90f);
+        transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
+
+        if (playerBody != null)
+        {
+            playerBody.Rotate(Vector3.up * normalizedLookInput.x);
+        }
+    }
+}
+========================================
+// DATEI: _Player\PlayerControls\PlayerMovement.cs
+========================================
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+/// <summary>
+/// CharacterController-based movement using the new Input System.
+/// Includes sprinting, crouching, and FOV effects.
+/// Integrated with PlayerStatsManager for stamina management.
+/// </summary>
+[RequireComponent(typeof(CharacterController))]
+public class PlayerMovement : MonoBehaviour
+{
+    [Header("References")]
+    public PlayerStatsManager playerStats; // Updated to new manager
+    public Camera playerCamera;
+    private CharacterController controller;
+    private PlayerControls controls;
+
+    [Header("Camera Effects")]
+    public float normalFOV = 60f;
+    public float sprintFOV = 75f;
+    public float fovChangeSpeed = 8f;
+
+    [Header("Movement Speed")]
+    public float walkSpeed = 5f;
+    public float sprintSpeed = 9f;
+    public float crouchSpeed = 2.5f;
+
+    [Header("Crouch Settings")]
+    public float standHeight = 2f;
+    public float crouchHeight = 1f;
+    public float crouchTransitionSpeed = 10f;
+
+    // Internal state
+    private Vector2 moveInput;
+    private Vector3 velocity;
+    private bool isSprinting;
+    private bool isCrouching;
+    private float gravity = -9.81f;
+    
+    // Curse restriction state
+    private bool isRestricted = false;
+    private Vector3 restrictedDirection;
+
+    /// <summary>
+    /// Initializes controls and component references.
+    /// </summary>
+    private void Awake()
+    {
+        controls = new PlayerControls();
+        controller = GetComponent<CharacterController>();
+        if (playerStats == null) playerStats = GetComponent<PlayerStatsManager>();
+
+        controls.Player.Sprint.started += ctx => isSprinting = true;
+        controls.Player.Sprint.canceled += ctx => isSprinting = false;
+
+        controls.Player.Crouch.started += ctx => isCrouching = true;
+        controls.Player.Crouch.canceled += ctx => isCrouching = false;
+    }
+
+    /// <summary>
+    /// Enables input controls.
+    /// </summary>
+    private void OnEnable() => controls.Enable();
+
+    /// <summary>
+    /// Disables input controls.
+    /// </summary>
+    private void OnDisable() => controls.Disable();
+
+    /// <summary>
+    /// Handles crouch height, movement, and FOV updates every frame.
+    /// </summary>
+    private void Update()
+    {
+        HandleCrouch();
+        HandleMovement();
+        HandleFOV();
+    }
+
+    /// <summary>
+    /// Smoothly adjusts the character controller height and center based on crouch state.
+    /// </summary>
+    private void HandleCrouch()
+    {
+        float targetHeight = isCrouching ? crouchHeight : standHeight;
+        controller.height = Mathf.Lerp(controller.height, targetHeight, Time.deltaTime * crouchTransitionSpeed);
+        controller.center = new Vector3(0, controller.height / 2f, 0);
+    }
+
+    /// <summary>
+    /// Calculates movement vectors, stamina drain, and applies gravity.
+    /// </summary>
+    private void HandleMovement()
+    {
+        moveInput = controls.Player.Move.ReadValue<Vector2>();
+        Vector3 move = transform.right * moveInput.x + transform.forward * moveInput.y;
+
+        if (isRestricted) move = restrictedDirection;
+
+        float currentSpeed = walkSpeed;
+
+        if (isCrouching)
+        {
+            currentSpeed = crouchSpeed;
+        }
+        else if (isSprinting && moveInput.magnitude > 0 && playerStats != null && playerStats.HasStamina(0.1f))
+        {
+            currentSpeed = sprintSpeed;
+            playerStats.UseStamina(playerStats.staminaDrainRate * Time.deltaTime);
+        }
+
+        controller.Move(move * currentSpeed * Time.deltaTime);
+
+        // Simple Gravity handling
+        if (controller.isGrounded && velocity.y < 0)
+        {
+            velocity.y = -2f;
+        }
+        else
+        {
+            velocity.y += gravity * Time.deltaTime;
+        }
+
+        controller.Move(velocity * Time.deltaTime);
+    }
+
+    /// <summary>
+    /// Smoothly interpolates the camera FOV when sprinting.
+    /// </summary>
+    private void HandleFOV()
+    {
+        if (playerCamera == null) return;
+
+        bool canSprint = !isCrouching && isSprinting && playerStats != null && playerStats.HasStamina(0.1f) && moveInput.magnitude > 0;
+        float targetFOV = canSprint ? sprintFOV : normalFOV;
+
+        playerCamera.fieldOfView = Mathf.Lerp(playerCamera.fieldOfView, targetFOV, Time.deltaTime * fovChangeSpeed);
+    }
+
+    /// <summary>
+    /// Checks if the player is currently running (sprinting, moving, not crouching).
+    /// </summary>
+    public bool IsRunning()
+    {
+        if (isCrouching) return false;
+        return isSprinting && moveInput.magnitude > 0;
+    }
+
+    /// <summary>
+    /// Checks if the player is currently crouching.
+    /// </summary>
+    public bool IsCrouching() => isCrouching;
+
+    /// <summary>
+    /// Checks if the player is currently providing movement input.
+    /// </summary>
+    public bool IsMoving() => moveInput.magnitude > 0;
+
+    /// <summary>
+    /// Forces the player to move in a specific direction (used by cursed objects).
+    /// </summary>
+    public void SetMovementRestriction(Vector3 direction)
+    {
+        isRestricted = true;
+        restrictedDirection = direction.normalized;
+    }
+
+    /// <summary>
+    /// Lifts the movement restriction.
+    /// </summary>
+    public void ClearMovementRestriction()
+    {
+        isRestricted = false;
+        restrictedDirection = Vector3.zero;
+    }
+}
